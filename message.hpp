@@ -1,4 +1,4 @@
-
+#include <sys/socket.h>
 struct PeerInfo_t
 {
     char hostname[256];
@@ -6,10 +6,22 @@ struct PeerInfo_t
 };
 typedef struct PeerInfo_t PeerInfo;
 
+struct PeerStore_t 
+{
+    PeerInfo peerinfo;
+    int socket_fd;
+};
+typedef struct PeerStore_t PeerStore;
+
+struct QueryStatus_t{
+    bool finished;
+    size_t timeStamp;
+};
+typedef struct QueryStatus_t QueryStatus;
 
 struct QueryId_t{
     char fileHash[256];
-    char timeStamp[16];
+    size_t timeStamp;
     char initHost[256];
 };
 typedef struct QueryId_t QueryId;
