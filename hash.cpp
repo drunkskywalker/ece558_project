@@ -94,6 +94,15 @@ std::vector<std::string> allFiles(const std::string & directory) {
   return files;
 }
 
+bool checkFileExist(std::string & hash, std::string & directory){
+    std::vector<std::string> files = allFiles(directory);
+    for(size_t i = 0; i < files.size(); i ++){
+      if(match(hash, files[i])){
+        return true;
+      }
+    }
+    return false; 
+}
 /*
 hash is the sha256 hash to check against. filename is the file to check.
 returns true if filename hashes to hash. else returns false.
