@@ -5,24 +5,23 @@
 #include "message.hpp"
 
 using namespace std;
-class Peer
-{
-    int initPeerNum;             // Initial peer number when setup
-    int maxPeerNum;              // Maximum connection number
-    unsigned short int pingPort; // Accept ping connection
-    unsigned short int userPort; // Accept connection from user
-    unsigned short int filePort; // Accept connection from peer for file
-    int TTL;                     // TTL for query hop
-    int timeToErase;             // Time for a query to be erased from table
-    int timeToCheck;             // Time to check whether to erase
+class Peer {
+    int initPeerNum;              // Initial peer number when setup
+    int maxPeerNum;               // Maximum connection number
+    unsigned short int pingPort;  // Accept ping connection
+    unsigned short int userPort;  // Accept connection from user
+    unsigned short int filePort;  // Accept connection from peer for file
+    int TTL;                      // TTL for query hop
+    int timeToErase;              // Time for a query to be erased from table
+    int timeToCheck;              // Time to check whether to erase
 
     PeerInfo selfInfo;
 
-    map<string, PeerStore> peerMap;          // Host -> peer_info, socket_fd
-    map<string, Query> queryForwardMap;      // QueryId ->  (prev host, time)
-    map<string, string> filePathMap;         // QueryId -> file path
-    map<string, QueryStatus> queryStatusMap; // File hash -> (find hit, time)
-
+    map<string, PeerStore> peerMap;           // Host -> peer_info, socket_fd
+    map<string, Query> queryForwardMap;       // QueryId ->  (prev host, time)
+    map<string, string> filePathMap;          // QueryId -> file path
+    map<string, QueryStatus> queryStatusMap;  // File hash -> (find hit, time)
+   public:
     /**
      * Join the peer-to-peer network, make connections to certain number of peers.
      * If it is in the famous address, just open ping port and wait for others to
@@ -124,10 +123,10 @@ class Peer
 
     /**
      * Wait for Query and QueryHit, use the list of ports in peerMap
-    */
+     */
     void runSelect();
 
-public:
+    // public:
     Peer(int ipn,
          int mpn,
          unsigned short int pprt,
