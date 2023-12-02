@@ -1,17 +1,10 @@
-#include <openssl/evp.h>
 
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <vector>
+#include "hash.hpp"
 
 /*
 g++ -o testhash hash.cpp -lssl -lcrypto
-
 */
+
 void handleErrors() {
   std::cout << "ERR\n";
 }
@@ -83,39 +76,71 @@ std::string getFileHash(const std::string & filename) {
 directory is the directory to get all files.
 returns a vector of filenames in the directory.
 */
+
+//not use cpp17 features
+
 std::vector<std::string> allFiles(const std::string & directory) {
+  // do not use cpp17 features
   std::vector<std::string> files;
-
-  for (const auto & entry : std::filesystem::directory_iterator(directory)) {
-    if (entry.is_regular_file()) {
-      files.push_back(entry.path().string());
-    }
-  }
-  return files;
-}
-
-bool checkFileExist(std::string & hash, std::string & directory){
-    std::vector<std::string> files = allFiles(directory);
-    for(size_t i = 0; i < files.size(); i ++){
-      if(match(hash, files[i])){
-        return true;
+  DIR * dir;
+  struct dirent * ent;
+  if ((dir = opendir(directory.c_str())) != NULL) {
+    while ((ent = readdir(dir)) != nullptr) {
+      if (ent->d_type == DT_REG) {
+        files.push_back(directory + "/" + ent->d_name);
       }
     }
-    return false; 
+    closedir(dir);
+  }
+  else {
+    std::cout << "Error opening directory\n";
+  }
+
+  return files;
 }
 /*
 hash is the sha256 hash to check against. filename is the file to check.
 returns true if filename hashes to hash. else returns false.
 */
-bool match(std::string hash, std::string filename) {
+bool matchHash(std::string & hash, std::string & filename) {
   std::string fileHash = getFileHash(filename);
   return hash.compare(fileHash) == 0;
+}
+
+bool checkFileExist(std::string & hash, std::string & directory) {
+  std::vector<std::string> files = allFiles(directory);
+  for (size_t i = 0; i < files.size(); i++) {
+    if (matchHash(hash, files[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool checkValidSHA256(std::string & hash) {
+  if (hash.size() != 64) {
+    return false;
+  }
+  for (size_t i = 0; i < hash.size(); i++) {
+    if (!isxdigit(hash[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 int main() {
   std::vector<std::string> files = allFiles(".");
   for (size_t i = 0; i < files.size(); i++) {
     std::cout << files.at(i) << ": " << getFileHash(files.at(i)) << "\n";
+  }
+  std::string hash = "0e245eb3d964897f561016b0462f930904aa1fde24e2cfe5d5ed28d531518a96";
+  std::string path = ".";
+  if (checkFileExist(hash, path)) {
+    std::cout << "file exists\n";
+  }
+  else {
+    std::cout << "file does not exist\n";
   }
   return 0;
 }
