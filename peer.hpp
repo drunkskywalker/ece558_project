@@ -16,7 +16,7 @@ class Peer
     int timeToErase;             // Time for a query to be erased from table
     int timeToCheck;             // Time to check whether to erase
 
-    char hostname[256];
+    PeerInfo selfInfo;
 
     map<string, PeerStore> peerMap;          // Host -> peer_info, socket_fd
     map<string, Query> queryForwardMap;      // QueryId ->  (prev host, time)
@@ -31,7 +31,7 @@ class Peer
      * init ping and handle pong, BFS
      * @param famousIdList A list of famous address for this network
      */
-    void joinP2P(vector<PeerInfo> &famousIdList);
+    int joinP2P(vector<PeerInfo> &famousIdList);
 
     /**
      * After pingPort accept a connection, receive the ping struct and handle the
