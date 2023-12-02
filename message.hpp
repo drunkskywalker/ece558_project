@@ -59,4 +59,10 @@ struct QueryHit_t
 };
 typedef struct QueryHit_t QueryHit;
 
-
+struct ContentMeta_t
+{
+    bool status;
+    char fileName[256];
+    size_t length;
+};
+typedef struct ContentMeta_t ContentMeta;
