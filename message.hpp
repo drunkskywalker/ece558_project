@@ -18,7 +18,7 @@ struct QueryStatus_t {
 typedef struct QueryStatus_t QueryStatus;
 
 struct QueryId_t {
-  char fileHash[256];
+  char fileHash[64];
   size_t timeStamp;
   char initHost[256];
 };
