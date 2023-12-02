@@ -108,4 +108,7 @@ void Peer::handlePing(int socket_fd)
     if(!resultPong.canConnect){
         close(socket_fd);
     }
+    else{
+        cout << "Connected with "<< currPing.selfInfo.hostname<<endl;
+    }
 }
