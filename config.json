@@ -6,5 +6,6 @@
     "filePort" : 65533,
     "TTL" : 10,
     "timeToErase" : 600,
-    "timeToCheck" : 300
+    "timeToCheck" : 300, 
+    "directory" : "./files"
 }

@@ -1,6 +1,6 @@
 
 CC=g++
-CFLAGS=-std=c++17 -Wall
+CFLAGS=-Wall#-std=c++17 -Wall
 LDFLAGS=-lcrypto -lssl
 TARGET=hash
 SOURCES=hash.cpp
