@@ -128,19 +128,3 @@ bool checkValidSHA256(std::string & hash) {
   }
   return true;
 }
-
-int main() {
-  std::vector<std::string> files = allFiles(".");
-  for (size_t i = 0; i < files.size(); i++) {
-    std::cout << files.at(i) << ": " << getFileHash(files.at(i)) << "\n";
-  }
-  std::string hash = "0e245eb3d964897f561016b0462f930904aa1fde24e2cfe5d5ed28d531518a96";
-  std::string path = ".";
-  if (checkFileExist(hash, path)) {
-    std::cout << "file exists\n";
-  }
-  else {
-    std::cout << "file does not exist\n";
-  }
-  return 0;
-}
