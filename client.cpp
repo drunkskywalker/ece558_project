@@ -4,6 +4,7 @@
 #include "socketUtils.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include "hash.hpp"
 
 using json = nlohmann::json;
 using namespace std;
@@ -29,22 +30,28 @@ json readJson(string filename){
     return jsonData;
 }
 
-int sendQuery(int socket, string hash){
-    return 1; 
+int sendQuery(int socket, string & hash){
+    int status = send(socket, hash.c_str(), 64, 0);
+    errorHandle(status,"Error: send hash failed",NULL, NULL);
+    return status; 
 }
 
-
-
-int uploadFile(){
-    return 1; 
+int uploadFile(string & path, string & directory){
+    string command = "cp " + path + " " + directory;
+    int result = std::system(command.c_str());
+    if (result == 0) {
+        std::cout << "Successfully uploaded.\n";
+    } else {
+        std::cerr << "Error executing command.\n";
+    }
+    return result; 
 }
 int main(){
-
     json jsonData = readJson("config.json");
-
     int port = jsonData["userPort"];
     // cout<< port ;
     // int socket = buildClient("127.0.0.1",to_string(port).c_str());
+    string dir = jsonData["directory"];
 
     while(true){
         cout << "what do you want to do?" << endl;
@@ -56,18 +63,38 @@ int main(){
             continue;
         }
         char input = inputString[0];
+        
 
         if (input == 'Q'){
             cout<<"What file do you want to query, input hash: " << endl;
             string hash;
             cin >> hash;
-            // sendQuery(socket, hash);
+            if (checkValidSHA256(hash)){
+                // sendQuery(socket, hash);
+            }else{
+                cout<<"Hash is not valid"<< endl;
+                continue;
+            }
         }else if(input == 'C'){
-            cout << "What file do you want to check, input filename" << endl;
-            // checkFileExist("");
+            cout << "What file do you want to check, input hash: " << endl;
+            string hash;
+            cin >> hash;
+            
+            if (checkValidSHA256(hash)){
+                if(checkFileExist(hash, dir)){
+                    cout<<"File EXISTS"<< endl;
+                }else{
+                    cout<<"File DOES NOT EXISTS"<< endl;
+                }
+            }else{
+                cout<<"Hash is not valid"<< endl;
+                continue;
+            }
         }else if(input == 'L'){
             cout << "What file do you want to upload, input path to file" << endl;
-            // i[loadFile();
+            string filepath;
+            cin >> filepath;
+            uploadFile(filepath, dir);
         }else if(input == 'E'){
             cout << "finished!"<<endl;
             return 0;
@@ -75,7 +102,6 @@ int main(){
             cout<<"unrecognized input instruction!!!!"<< endl;
             continue;
         }
-        
         // send query, check if exist, exit
 
     }
