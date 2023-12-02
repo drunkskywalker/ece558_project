@@ -1,0 +1,10 @@
+{
+    "initPeerNum" : 3,
+    "maxPeerNum" : 5,
+    "pingPort" : 65535,
+    "userPort" : 65534,
+    "filePort" : 65533,
+    "TTL" : 10,
+    "timeToErase" : 600,
+    "timeToCheck" : 300
+}
