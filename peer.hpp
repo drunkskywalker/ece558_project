@@ -1,13 +1,14 @@
+#ifndef PEER
+#define PEER
 #include <map>
 #include <string>
 #include <vector>
-
 #include "message.hpp"
-
+#include "socketUtils.hpp"
 using namespace std;
 class Peer {
-    int initPeerNum;              // Initial peer number when setup
-    int maxPeerNum;               // Maximum connection number
+    size_t initPeerNum;              // Initial peer number when setup
+    size_t maxPeerNum;               // Maximum connection number
     unsigned short int pingPort;  // Accept ping connection
     unsigned short int userPort;  // Accept connection from user
     unsigned short int filePort;  // Accept connection from peer for file
@@ -151,3 +152,5 @@ class Peer {
      */
     void run(vector<PeerInfo> &famousIdList);
 };
+
+#endif

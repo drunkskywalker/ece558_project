@@ -1,18 +1,13 @@
+CPPFLAGS=-Wall  -std=c++11 -pedantic -ggdb3
+SRCS= socketUtils.cpp peer.cpp testPingPong.cpp
+OBJS=$(patsubst %.cpp, %.o, $(SRCS))
+PROGRAM=testPingPong
 
-CC=g++
-CFLAGS=-Wall#-std=c++17 -Wall
-LDFLAGS=-lcrypto -lssl
-TARGET=hash
-SOURCES=hash.cpp
-OBJECTS=$(SOURCES:.cpp=.o)
+$(PROGRAM): $(OBJS)
+	g++ $(CPPFLAGS) -o $@ $(OBJS)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $<
+%.o: %.cpp socketUtils.hpp message.hpp peer.hpp
+	g++ -c $(CPPFLAGS) $<
 
 clean:
-	rm -f $(TARGET) $(OBJECTS)
-
-.PHONY: clean
+	rm -f $(OBJS) $(PROGRAM) *~
