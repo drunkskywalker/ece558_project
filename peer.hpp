@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "hash.hpp"
-#include "message.hpp"
 #include "socketUtils.hpp"
 
 using namespace std;
