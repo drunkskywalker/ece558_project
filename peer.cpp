@@ -108,22 +108,23 @@ void Peer::handlePing(int socket_fd) {
 }
 
 void Peer::sendAll(Query qry) {
-  string key = genQueryIdString(qry.id);
+  // if ttl is 0, the query has reached max hop. ignore
+  qry.TTL--;
+  if (qry.TTL <= 0) {
+    return;
+  }
   for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end(); ++it) {
-    // self hostname is not prevHost, and
-    // self hostname is not initHost, and
-    // queryForwardMap does not have the query
+    // self hostname is not prevHost, and self hostname is not initHost
     if (strcmp(selfInfo.hostname, qry.prevHost) != 0 &&
-        strcmp(selfInfo.hostname, qry.id.initHost) != 0 &&
-        queryForwardMap.find(key) == queryForwardMap.end()) {
+        strcmp(selfInfo.hostname, qry.id.initHost) != 0) {
       int target_fd = it->second.socket_fd;
 
       Query newQry = qry;
       sprintf(newQry.prevHost, "%s", selfInfo.hostname);
 
       // send type of Query first
-
-      if (send(target_fd, TYPE_QUERY, sizeof(int), 0) == -1) {
+      int flag = TYPE_QUERY;
+      if (send(target_fd, &flag, sizeof(int), 0) < 0) {
         cout << "Failed to send to peer " << it->first << "\n";
         close(target_fd);
         peerMap.erase(it);
@@ -134,10 +135,49 @@ void Peer::sendAll(Query qry) {
         close(target_fd);
         peerMap.erase(it);
       }
+    }
+  }
+}
 
-      else {
-        queryForwardMap[key] = qry;
-      }
+void Peer::initQuery(string fileHash) {
+  Query qry;
+  memset(&qry, 0, sizeof(qry));
+  qry.id.timeStamp = time(NULL);
+  sprintf(qry.id.fileHash, "%s", fileHash.c_str());
+  sprintf(qry.id.initHost, "%s", selfInfo.hostname);
+  qry.TTL = TTL + 1;
+  sprintf(qry.prevHost, "%s", selfInfo.hostname);
+
+  // query status map: saves if the query is successfully responded
+  QueryStatus qs;
+  qs.finished = false;
+  qs.timeStamp = qry.id.timeStamp;
+  queryStatusMap[fileHash] = qs;
+
+  string queryId = genQueryIdString(qry.id);
+
+  // query forward map: this query has been forwarded. (in this case sent by self)
+  queryForwardMap[queryId] = qry;
+  sendAll(qry);
+}
+
+void Peer::handleQuery(Query qry) {
+  string queryId = genQueryIdString(qry.id);
+
+  // only process unprocessed query
+  if (queryForwardMap.find(queryId) == queryForwardMap.end()) {
+    queryForwardMap[queryId] = qry;
+    string fileHash = qry.id.fileHash;
+
+    // self has the file
+    if (checkFileExist(fileHash, fileDir)) {
+      string filePath = findFileName(fileHash, fileDir);
+      filePathMap[queryId] = filePath;
+      // initQueryHit(qry, filePath);
+    }
+    // self doesn't have the file, forward to others
+    else {
+      sendAll(qry);
     }
   }
 }
