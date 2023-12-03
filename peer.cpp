@@ -184,6 +184,106 @@ void Peer::handleQuery(Query qry) {
   }
 }
 
+
+
+void Peer::sendQueryHit(QueryHit qryh, string prevHost, int target_fd){
+  int flag = TYPE_QUERYHIT;
+    if (send(target_fd, &flag, sizeof(int), 0) < 0) {
+          cout << "Failed to send QueryHit to peer " << prevHost << "\n";
+          close(target_fd);
+          peerMap.erase(prevHost);
+          return;
+    }
+    if (send(target_fd, &qryh, sizeof(qryh), 0) < 0) {
+          cout << "Failed to send QueryHit to peer " << prevHost << "\n";
+          close(target_fd);
+          peerMap.erase(prevHost);
+    }
+}
+
+void Peer::initQueryHit(Query qry){
+  QueryHit newQryH;
+  newQryH.id = qry.id;
+  newQryH.destPeer = selfInfo;
+  string prevHost = string(qry.prevHost);
+  int target_fd = peerMap[prevHost].socket_fd;
+  sendQueryHit(newQryH, prevHost, target_fd );
+}
+
+void Peer::forwardQueryHit(QueryHit qryh){
+  string key = genQueryIdString(qryh.id);
+  string targetHost = "";
+  int target_fd = -1;
+  if(queryForwardMap.find(key)!=queryForwardMap.end()){
+    targetHost = string(queryForwardMap[key].prevHost);
+  }
+  if(peerMap.find(targetHost)!=peerMap.end()){
+     target_fd = peerMap[targetHost].socket_fd;
+  }
+  if(targetHost.size()<1 || target_fd<0){
+      cout<< "Failed to find previous host socket in the peerMap"<<endl;
+      return;
+  }
+  sendQueryHit(qryh,targetHost,target_fd);
+}
+
+void Peer::handleQueryHit(QueryHit qryh){
+  // If is initial host -> start file request
+  if(strcmp(qryh.id.initHost, selfInfo.hostname)==0){
+    string key = genQueryIdString(qryh.id);
+    if(queryStatusMap.find(key)!=queryStatusMap.end() && !queryStatusMap[key].finished){
+      queryStatusMap[key].finished = true;
+      // If failed: change finish in the initFileRequest method
+      initFileRequest(qryh.id, qryh.destPeer);
+      return;
+    }
+  }
+  else{
+    forwardQueryHit(qryh);
+  }
+}
+
+void Peer::initFileRequest(QueryId qid, PeerInfo pif){
+  string key = genQueryIdString(qid);
+  int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
+  if(dest_fd < 0){
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  if(send(dest_fd, &qid, sizeof(qid), 0) < 0) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  ContentMeta fileMeta;
+  memset(&fileMeta, 0, sizeof(fileMeta));
+  if (recv(dest_fd, &fileMeta, sizeof(fileMeta), MSG_WAITALL) < 0) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  if(!fileMeta.status){
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  vector<char> content;
+  char buffer[2048];
+  size_t currLen = 0;
+  int len;
+  while(currLen < fileMeta.length){
+    memset(&buffer, 0, sizeof(buffer));
+    if((len = recv(dest_fd, &buffer, sizeof(buffer), MSG_WAITALL)) < 0){
+      close(dest_fd);
+      queryStatusMap[key].finished = false;
+      return;
+    }
+    currLen+=len;
+    content.insert(content.end(),buffer,buffer+len);
+    
+  }
+}
+
 void Peer::runSelect(){
     fd_set peersFDSet;
 

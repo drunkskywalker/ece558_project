@@ -19,6 +19,7 @@ void digest_message(const unsigned char * message,
                     unsigned int * digest_len);
 
 std::string getFileHash(const std::string & filename);
+std::string getVectorCharHash(const std::vector<char> & content);
 size_t getFileLength(std::string & filename);
 std::vector<std::string> allFiles(const std::string & directory);
 bool matchHash(std::string & hash, std::string & filename);

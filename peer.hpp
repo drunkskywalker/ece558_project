@@ -67,11 +67,13 @@ class Peer {
      */
   void handleQuery(Query qry);
 
+  void sendQueryHit(QueryHit qryh,string prevHost, int target_fd);
+
   /**
      * After finding the file in local directory, generate the Queryhit
-     * with filePath and query id in the query
+     * query id and selfInfo in the query
      */
-  void initQueryHit(Query qry, string filePath);
+  void initQueryHit(Query qry);
 
   /**
      * After receiving a Queryhit and current hostname is not the initial

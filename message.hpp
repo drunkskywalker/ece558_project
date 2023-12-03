@@ -52,7 +52,7 @@ typedef struct Query_t Query;
 
 struct QueryHit_t {
   QueryId id;
-  char prevtHost[256];
+  // char prevtHost[256];
   PeerInfo destPeer;
 };
 typedef struct QueryHit_t QueryHit;
