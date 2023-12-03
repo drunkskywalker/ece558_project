@@ -68,6 +68,22 @@ std::string getFileHash(const std::string & filename) {
   return hashString.str();
 }
 
+std::string getVectorCharHash(const std::vector<char> & content) {
+  const unsigned char * message = (const unsigned char *)content.data();
+  size_t message_len = content.size();
+  unsigned char * digest;
+  unsigned int digest_len;
+  digest_message(message, message_len, &digest, &digest_len);
+  std::ostringstream hashString;
+  hashString << std::hex << std::setfill('0');
+  for (unsigned int i = 0; i < digest_len; ++i) {
+    hashString << std::setw(2) << static_cast<int>(digest[i]);
+  }
+
+  OPENSSL_free(digest);
+  return hashString.str();
+}
+
 size_t getFileLength(std::string & filename) {
   std::ifstream file(filename, std::ios::binary);
   if (!file.is_open()) {
