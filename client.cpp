@@ -86,7 +86,6 @@ void check(string & dir) {
 
 int directoryCheck(string & dir) {
   DIR * directory;
-  struct dirent * ent;
   if ((directory = opendir(dir.c_str())) == NULL) {
     cout << "Directory " << dir << " does not exist. Creating directory...\n";
     if (mkdir(dir.c_str(), 0777) != 0) {
