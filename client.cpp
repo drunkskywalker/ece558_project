@@ -24,9 +24,6 @@ json readJson(string filename){
 
     // Close the file
     file.close();
-
-    // // Access data from the JSON object
-    // int port  = jsonData["userPort"];
     return jsonData;
 }
 
@@ -50,7 +47,7 @@ int main(){
     json jsonData = readJson("config.json");
     int port = jsonData["userPort"];
     // cout<< port ;
-    // int socket = buildClient("127.0.0.1",to_string(port).c_str());
+    int socket = buildClient("127.0.0.1",to_string(port).c_str());
     string dir = jsonData["directory"];
 
     while(true){
@@ -64,13 +61,12 @@ int main(){
         }
         char input = inputString[0];
         
-
         if (input == 'Q'){
             cout<<"What file do you want to query, input hash: " << endl;
             string hash;
             cin >> hash;
             if (checkValidSHA256(hash)){
-                // sendQuery(socket, hash);
+                sendQuery(socket, hash);
             }else{
                 cout<<"Hash is not valid"<< endl;
                 continue;
@@ -102,7 +98,6 @@ int main(){
             cout<<"unrecognized input instruction!!!!"<< endl;
             continue;
         }
-        // send query, check if exist, exit
 
     }
     
