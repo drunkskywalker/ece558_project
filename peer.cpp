@@ -114,9 +114,9 @@ void Peer::sendAll(Query qry) {
     return;
   }
   for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end(); ++it) {
-    // self hostname is not prevHost, and self hostname is not initHost
-    if (strcmp(selfInfo.hostname, qry.prevHost) != 0 &&
-        strcmp(selfInfo.hostname, qry.id.initHost) != 0) {
+    // target hostname is not prevHost, and target hostname is not initHost
+    if ((strcmp(it->first.c_str(), qry.prevHost) != 0 &&
+         strcmp(it->first.c_str(), qry.id.initHost) != 0)) {
       int target_fd = it->second.socket_fd;
 
       Query newQry = qry;
@@ -157,8 +157,9 @@ void Peer::initQuery(string fileHash) {
   string queryId = genQueryIdString(qry.id);
 
   // query forward map: this query has been forwarded. (in this case sent by self)
-  queryForwardMap[queryId] = qry;
+
   sendAll(qry);
+  queryForwardMap[queryId] = qry;
 }
 
 void Peer::handleQuery(Query qry) {
