@@ -18,6 +18,7 @@ $(BIN)/client: $(OBJS_client)
 	g++ $(CPPFLAGS) -o $@ $(OBJS_client) $(SSLFLAG)
 
 $(BIN)/%.o: %.cpp socketUtils.hpp message.hpp peer.hpp hash.hpp 
+	@mkdir -p $(BIN)
 	g++ -c $(CPPFLAGS) $< -o $@
 
 clean:
