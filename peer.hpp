@@ -20,6 +20,8 @@ class Peer {
 
   PeerInfo selfInfo;
 
+  string fileDir;  // Directory for files
+
   map<string, PeerStore> peerMap;           // Host -> peer_info, socket_fd
   map<string, Query> queryForwardMap;       // QueryId ->  (prev host, time)
   map<string, string> filePathMap;          // QueryId -> file path
@@ -143,7 +145,8 @@ class Peer {
        unsigned short int fprt,
        int ttl,
        int tte,
-       int ttc) :
+       int ttc,
+       string dir) :
       initPeerNum(ipn),
       maxPeerNum(mpn),
       pingPort(pprt),
@@ -151,7 +154,8 @@ class Peer {
       filePort(fprt),
       TTL(ttl),
       timeToErase(tte),
-      timeToCheck(ttc) {}
+      timeToCheck(ttc),
+      fileDir(dir) {}
 
   /**
      * Run the service
