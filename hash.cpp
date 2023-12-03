@@ -2,7 +2,7 @@
 #include "hash.hpp"
 
 void handleErrors() {
-  std::cout << "ERR\n";
+  std::cout << "Error hashing file\n";
 }
 
 // helper function to calculate sha256 hash.
@@ -68,15 +68,25 @@ std::string getFileHash(const std::string & filename) {
   return hashString.str();
 }
 
+size_t getFileLength(std::string & filename) {
+  std::ifstream file(filename, std::ios::binary);
+  if (!file.is_open()) {
+    std::cerr << "Error opening file: " << filename << std::endl;
+    return 0;
+  }
+  file.seekg(0, std::ios::end);
+  size_t length = file.tellg();
+  file.close();
+
+  return length;
+}
+
 /*
 directory is the directory to get all files.
 returns a vector of filenames in the directory.
 */
 
-//not use cpp17 features
-
 std::vector<std::string> allFiles(const std::string & directory) {
-  // do not use cpp17 features
   std::vector<std::string> files;
   DIR * dir;
   struct dirent * ent;
@@ -113,6 +123,16 @@ bool checkFileExist(std::string & hash, std::string & directory) {
   return false;
 }
 
+std::string findFileName(std::string & hash, std::string & directory) {
+  std::vector<std::string> files = allFiles(directory);
+  for (size_t i = 0; i < files.size(); i++) {
+    if (matchHash(hash, files[i])) {
+      return files[i];
+    }
+  }
+  return "";
+}
+
 bool checkValidSHA256(std::string & hash) {
   if (hash.size() != 64) {
     return false;
@@ -123,4 +143,21 @@ bool checkValidSHA256(std::string & hash) {
     }
   }
   return true;
+}
+
+ContentMeta genContentMeta(std::string & hash, std::string & dir) {
+  ContentMeta meta;
+  if (checkFileExist(hash, dir)) {
+    std::string filename = findFileName(hash, dir);
+    meta.status = true;
+    strcpy(meta.fileName, filename.c_str());
+    meta.length = getFileLength(filename);
+  }
+  else {
+    meta.status = false;
+    meta.fileName[0] = '\0';
+    meta.length = 0;
+  }
+
+  return meta;
 }

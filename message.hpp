@@ -1,4 +1,8 @@
 #include <sys/socket.h>
+
+#define TYPE_QUERY 0
+#define TYPE_QUERYHIT 1
+
 struct PeerInfo_t {
   char hostname[256];
   unsigned short int port;  //listen for connection
@@ -41,7 +45,7 @@ typedef struct Pong_t Pong;
 
 struct Query_t {
   QueryId id;
-  char prevtHost[256];
+  char prevHost[256];
   int TTL;
 };
 typedef struct Query_t Query;
