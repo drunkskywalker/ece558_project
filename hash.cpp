@@ -1,10 +1,6 @@
 
 #include "hash.hpp"
 
-/*
-g++ -o testhash hash.cpp -lssl -lcrypto
-*/
-
 void handleErrors() {
   std::cout << "ERR\n";
 }
