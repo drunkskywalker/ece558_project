@@ -17,6 +17,7 @@ int Peer::joinP2P(vector<PeerInfo> & famousIdList) {
   }
   selfInfo.port = pingPort;
   deque<PeerInfo> peerQueue;
+
   for (PeerInfo pio : famousIdList) {
     if (selfInfo.hostname != pio.hostname) {
       peerQueue.push_back(pio);
@@ -181,4 +182,53 @@ void Peer::handleQuery(Query qry) {
       sendAll(qry);
     }
   }
+}
+
+void Peer::runSelect(){
+    fd_set peersFDSet;
+
+    // set timeout
+    struct timeval time;
+    time.tv_sec = 60; 
+    time.tv_usec = 0;
+
+    while(true){
+      FD_ZERO(&peersFDSet);
+      int nfds = 0;
+      for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end(); ++it) {
+        FD_SET(it->second.socket_fd, &peersFDSet);
+        if(it->second.socket_fd > nfds){
+          nfds = it->second.socket_fd; 
+        }
+      }
+      nfds ++;
+      int status = select(nfds, &peersFDSet, NULL, NULL, &time);
+      errorHandle(status, "Error: select error", NULL, NULL);
+      if(status == 0){
+          cout<<"listen time limit"<<endl;
+          continue;
+      }else{
+        for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end(); ++it) {
+          int target_fd = it->second.socket_fd; 
+          if(FD_ISSET(target_fd, &peersFDSet)){ //find socket that received data
+            // recieve type
+            int queryType = 0;
+            status = recv(target_fd, &queryType,sizeof(int),0);
+            errorHandle(status, "Error: select error", NULL, NULL);
+            // recieve query or query hit
+            if (queryType == TYPE_QUERY){
+              Query qry;
+              status = recv(target_fd, &qry,sizeof(Query),0);
+              errorHandle(status, "Error: Receive query error", NULL, NULL);
+              handleQuery(qry);
+            }else{
+              QueryHit qryh;
+              status = recv(target_fd, &qryh,sizeof(QueryHit),0);
+              errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
+              handleQueryHit(qryh);
+            }
+          }
+        }
+      }
+    }
 }
