@@ -163,6 +163,7 @@ void Peer::sendAll(Query qry)
         close(target_fd);
         peerMap.erase(it);
       }
+      cout << "Foward request to "<< it->first<<endl;
     }
   }
 }
@@ -206,7 +207,8 @@ void Peer::handleQuery(Query qry)
     {
       string filePath = findFileName(fileHash, fileDir);
       filePathMap[queryId] = filePath;
-      // initQueryHit(qry, filePath);
+      initQueryHit(qry);
+      
     }
     // self doesn't have the file, forward to others
     else
@@ -241,6 +243,7 @@ void Peer::initQueryHit(Query qry)
   newQryH.destPeer = selfInfo;
   string prevHost = string(qry.prevHost);
   int target_fd = peerMap[prevHost].socket_fd;
+  cout<< "Init queryHit and send back to "<< prevHost <<endl;
   sendQueryHit(newQryH, prevHost, target_fd);
 }
 
