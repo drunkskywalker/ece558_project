@@ -1,5 +1,6 @@
 
 #include "hash.hpp"
+#define RECURSIVE 1
 
 void handleErrors() {
   std::cout << "Error hashing file\n";
@@ -102,14 +103,24 @@ directory is the directory to get all files.
 returns a vector of filenames in the directory.
 */
 
-std::vector<std::string> allFiles(const std::string & directory) {
+std::vector<std::string> allFiles(const std::string & directory, bool recursive) {
   std::vector<std::string> files;
   DIR * dir;
   struct dirent * ent;
   if ((dir = opendir(directory.c_str())) != NULL) {
-    while ((ent = readdir(dir)) != nullptr) {
+    while ((ent = readdir(dir)) != NULL) {
       if (ent->d_type == DT_REG) {
         files.push_back(directory + "/" + ent->d_name);
+      }
+
+      if (ent->d_type == DT_DIR && recursive) {
+        if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+          std::vector<std::string> sub =
+              allFiles(directory + "/" + ent->d_name, recursive);
+          for (size_t i = 0; i < sub.size(); i++) {
+            files.push_back(sub[i]);
+          }
+        }
       }
     }
     closedir(dir);
@@ -130,7 +141,7 @@ bool matchHash(std::string & hash, std::string & filename) {
 }
 
 bool checkFileExist(std::string & hash, std::string & directory) {
-  std::vector<std::string> files = allFiles(directory);
+  std::vector<std::string> files = allFiles(directory, RECURSIVE);
   for (size_t i = 0; i < files.size(); i++) {
     if (matchHash(hash, files[i])) {
       return true;
@@ -140,7 +151,7 @@ bool checkFileExist(std::string & hash, std::string & directory) {
 }
 
 std::string findFileName(std::string & hash, std::string & directory) {
-  std::vector<std::string> files = allFiles(directory);
+  std::vector<std::string> files = allFiles(directory, RECURSIVE);
   for (size_t i = 0; i < files.size(); i++) {
     if (matchHash(hash, files[i])) {
       return files[i];
@@ -161,19 +172,7 @@ bool checkValidSHA256(std::string & hash) {
   return true;
 }
 
-ContentMeta genContentMeta(std::string & hash, std::string & dir) {
-  ContentMeta meta;
-  if (checkFileExist(hash, dir)) {
-    std::string filename = findFileName(hash, dir);
-    meta.status = true;
-    strcpy(meta.fileName, filename.c_str());
-    meta.length = getFileLength(filename);
-  }
-  else {
-    meta.status = false;
-    meta.fileName[0] = '\0';
-    meta.length = 0;
-  }
-
-  return meta;
+std::string getFileNameFromPath(std::string & path) {
+  size_t pos = path.find_last_of("/");
+  return path.substr(pos + 1);
 }
