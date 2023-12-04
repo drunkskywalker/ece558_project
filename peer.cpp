@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <set>
+#include <fstream>
 
 string Peer::genQueryIdString(QueryId id) {
   std::stringstream ss;
@@ -277,6 +278,52 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif){
     }
     currLen+=len;
     content.insert(content.end(),buffer,buffer+len);
-    
   }
+  string currHash = getVectorCharHash(content);
+  if(strcmp(currHash.c_str(),qid.fileHash)!=0){
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  ofstream saveFile;
+  saveFile.open(fileDir + fileMeta.fileName);
+  saveFile << string(content.begin(), content.end());
+  saveFile.close();
+}
+
+void Peer::handleFileRequest(int socket_fd){
+  QueryId qid;
+  memset(&qid, 0, sizeof(qid));
+  if (recv(socket_fd, &qid, sizeof(qid), MSG_WAITALL) < 0) {
+    close(socket_fd);
+    return;
+  }
+  ContentMeta resMeta;
+  memset(&resMeta, 0, sizeof(resMeta));
+  string key = genQueryIdString(qid);
+  if(filePathMap.find(key)!= filePathMap.end()){
+    string filePath = filePathMap[key];
+    ifstream file(filePath, ios::binary);
+    if(file.is_open()){
+      ostringstream fileContent;
+      fileContent << file.rdbuf();
+      file.close();
+      string content = fileContent.str();
+      const char * content_cstr = content.c_str();
+      resMeta.status = true;
+      resMeta.length = strlen(content_cstr);
+      sprintf(resMeta.fileName, "%s", filePath.substr(filePath.find_last_of("/\\")+1));
+      
+      if(send(socket_fd,&resMeta, sizeof(resMeta),0)>0){
+          if(send(socket_fd, &content_cstr, strlen(content_cstr), 0)>=0){
+          filePathMap.erase(key);
+        }
+      }
+      close(socket_fd);
+      return;
+    }
+  }
+  resMeta.status = false;
+  send(socket_fd,&resMeta, sizeof(resMeta),0);
+  close(socket_fd);
 }
