@@ -112,10 +112,6 @@ void help() {
        << "[L] Load a file\n"
        << "[H] Show this help again\n"
        << "[E] Exit the program\n====================\n";
-  cout << "Hash is a 64 character string composed of only hexadecimal digits.\n"
-       << "Example: "
-          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n============"
-          "========\n";
 }
 
 int main() {
