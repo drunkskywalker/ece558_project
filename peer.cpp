@@ -433,6 +433,7 @@ void Peer::runSelect()
             Query qry;
             status = recv(target_fd, &qry, sizeof(Query), 0);
             errorHandle(status, "Error: Receive query error", NULL, NULL);
+            cout<<"received query from "<<qry.prevHost<<endl;
             handleQuery(qry);
           }
           else
