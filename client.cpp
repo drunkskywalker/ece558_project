@@ -55,10 +55,11 @@ void query(int & socket, string & dir) {
 
   if (checkValidSHA256(hash)) {
     if (checkFileExist(hash, dir)) {
-      cout << "File EXISTS" << endl;
+      cout << "File already exists." << endl;
     }
     else {
-      cout << "File DOES NOT EXIST" << endl;
+      cout << "File does not exist. sending query..." << endl;
+      sendQuery(socket, hash);
     }
   }
   else {
@@ -111,7 +112,7 @@ void help() {
 }
 
 int main() {
-  json jsonData = readJson("config.json");
+  json jsonData = readJson("../config.json");
   int port = jsonData["userPort"];
   int socket = buildClient("127.0.0.1", to_string(port).c_str());
   string dir = jsonData["directory"];
