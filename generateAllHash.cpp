@@ -12,9 +12,9 @@ int main() {
     FILE * fp = fopen(pt.c_str(), "wb");
 
     for (auto p : hashes) {
-      fprintf(fp, "%s:", p.c_str());
+      fprintf(fp, "%s:\n", p.c_str());
       std::string hash = getFileHash(p);
-      fprintf(fp, "%s\n", hash.c_str());
+      fprintf(fp, "%s\n\n", hash.c_str());
     }
     fclose(fp);
   }
