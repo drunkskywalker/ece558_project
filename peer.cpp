@@ -409,7 +409,7 @@ void Peer::runUserPort(unsigned short int port) {
     int curr_fd = try_accept(user_fd);
     if (curr_fd != -1) {
       memset(&recvHash, 0, sizeof(recvHash));
-      if (recv(curr_fd, &recvHash, sizeof(recvHash), MSG_WAITALL) > 0) {
+      if (recv(curr_fd, &recvHash, 64, MSG_WAITALL) > 0) {
         string hash_str(recvHash);
         if (hash_str.length() == 64 &&
             queryStatusMap.find(hash_str) == queryStatusMap.end()) {
