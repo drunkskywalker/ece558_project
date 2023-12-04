@@ -1,12 +1,42 @@
+./example/folder1/The Celestial Garden.txt:
+f7d6ce96c5ee75bd91e7c021dc5f74b2715a23931d856e35dfd24398224dd1f5
+
+./example/folder1/Echoes of Eternity.txt:
+f89a7d1c6a30084d0b300abc1607d93b09a1f8e32534c455f89f81ea81b6da47
+
+./example/folder1/Whispers in the Mist.txt:
+8c44baba04833827ef532e343d8913f15cb3ed8ea91d2f8f20d7ac6ee0eacb12
+
+./example/folder1/Chronicles of the Celestial Atlas.txt:
+472bff2752072b57ef9c5f89c6c10db112392632ad8301cd2f80ea76bb61a25d
+
+./example/folder1/Serenade of the Forgotten Stars.txt:
+0fb3b69dc2c9fc55a66aed6019ca2b6579699098a5bcd4ecb71bbe48f94669f8
+
+./example/folder1/The Chronicles of Eternova: A Symphony of Realms.txt:
+615e93694e61640e555087ea0c37722409053417718b8c890002c9711ce70e49
+
+./example/folder1/Raining Forest.MP4:
+65009761415422abcd4dc7fa28ff86a9023e95d8bb7ccf2523794abb196f3e61
+
 ./example/folder2/The Clockwork City.txt:
 370566d10a9fad47a2c3bf28beb14d0c855252ed20f985403e161b1719a6e6f6
 
-./example/folder4/The Lighthouse at the Edge of Time.txt:
-28cb999744d2108ea8523c5d9bd045e200a137e8983f7737b3c530b29efbf034
+./example/folder2/Shadows of the Silver Grove.txt:
+d707e1b7da3358cd31fe598cc6325a3a6e12df5f8626fbc0f52a22dfe8e11a81
+
+./example/folder2/Ephemeral Alchemy.txt:
+bd1b1f87423135f56239fbf0b05ec7259536d1bc35910d3b83a0f519e36f996f
+
+./example/folder2/The Celestial Weaver's Loom.txt:
+c6c29654db5052cf1cc33e78e45b6f6b153f037f7e6f73a49fb4b1876f260256
+
+./example/folder2/The Enchanted Odyssey of Elysium's Heir.txt:
+d4c290865e0dfcac73f33e19ccbefa701f584d933c214aaf5ac67b190edbddf3
 
 ./example/folder3/The Enchanted Forest.txt:
 53f659ceafae00dddd05fafdaec584bc0b7bd1b707ff992e80d021032a3201ed
 
-./example/folder1/The Celestial Garden.txt:
-f7d6ce96c5ee75bd91e7c021dc5f74b2715a23931d856e35dfd24398224dd1f5
+./example/folder4/The Lighthouse at the Edge of Time.txt:
+28cb999744d2108ea8523c5d9bd045e200a137e8983f7737b3c530b29efbf034
 
