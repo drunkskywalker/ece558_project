@@ -101,20 +101,22 @@ int directoryCheck(string & dir) {
 }
 
 void help() {
-  cout << "What do you want to do?\n"
-       << "Q: Send query to peers\n"
-       << "C: Check if a file exists\n"
-       << "L: Load a file\n"
-       << "H: Show this help\n"
-       << "E: Exit the program\n\n";
+  cout << "What do you want to do?\n====================\n"
+       << "[Q] Send query to peers\n"
+       << "[C] Check if a file exists\n"
+       << "[L] Load a file\n"
+       << "[H] Show this help again\n"
+       << "[E] Exit the program\n====================\n";
   cout << "Hash is a 64 character string composed of only hexadecimal digits.\n"
-       << "Example: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n";
+       << "Example: "
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n============"
+          "========\n";
 }
 
 int main() {
   json jsonData = readJson("./config.json");
   int port = jsonData["userPort"];
-  int socket = buildClient("127.0.0.1", to_string(port).c_str());
+
   string dir = jsonData["directory"];
   if (directoryCheck(dir) != 0) {
     return 1;
@@ -129,7 +131,9 @@ int main() {
     }
     char input = inputString[0];
     if (input == 'Q' || input == 'q') {
+      int socket = buildClient("127.0.0.1", to_string(port).c_str());
       query(socket, dir);
+      close(socket);
     }
     else if (input == 'C' || input == 'c') {
       check(dir);
