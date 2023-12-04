@@ -19,6 +19,9 @@ f89a7d1c6a30084d0b300abc1607d93b09a1f8e32534c455f89f81ea81b6da47
 ./example/folder1/Raining Forest.MP4:
 65009761415422abcd4dc7fa28ff86a9023e95d8bb7ccf2523794abb196f3e61
 
+./example/folder1/Simulator Screen Recording - iPhone 15 Pro - 2023-11-30 at 15.09.52.mp4:
+2e992b2737e823c73ef165f02587eb79b5e17b4bd093123221c1f592fe64c743
+
 ./example/folder2/The Clockwork City.txt:
 370566d10a9fad47a2c3bf28beb14d0c855252ed20f985403e161b1719a6e6f6
 
@@ -34,9 +37,39 @@ c6c29654db5052cf1cc33e78e45b6f6b153f037f7e6f73a49fb4b1876f260256
 ./example/folder2/The Enchanted Odyssey of Elysium's Heir.txt:
 d4c290865e0dfcac73f33e19ccbefa701f584d933c214aaf5ac67b190edbddf3
 
-./example/folder3/The Enchanted Forest.txt:
+./example/folder3/The Inventor's Quest for the Sky City.txt:
+14e5fc63e09fe348fbdbd8dff0a250717106a9dce141384821b9879b276a64c6
+
+./example/folder3/The Painter Who Colored the Stars.txt:
+079ff4a479f51ae24fbe2634e13dcedff99b17d664682b01a97c4cded6363269
+
+./example/folder3/The Weaver of Dreams.txt:
+78ea0938d7ab2cb9a88e77490dec6ea0bc9724df0968ed34c9abe747caa82eba
+
+./example/folder3/The Whispering Forest.txt:
+0ee412584bef14c4b77f667adfb23ecdcfc6486ee658e8472261378f65021d68
+
+./example/folder3/The Last Guardian of the Enchanted Forest.txt:
 53f659ceafae00dddd05fafdaec584bc0b7bd1b707ff992e80d021032a3201ed
 
 ./example/folder4/The Lighthouse at the Edge of Time.txt:
 28cb999744d2108ea8523c5d9bd045e200a137e8983f7737b3c530b29efbf034
+
+./example/folder4/The Clockmaker's Lost Time.txt:
+152d2b7f6796ee2b6cdd03fecd2b3e14c9bc73da29814ac4a057239ce5632fab
+
+./example/folder4/The Enchanted Tree of Wisdom and Healing.txt:
+a3ea9149a03f63b7bbd35327834360a9598a1ba2ce9d93b2ff444299872b3531
+
+./example/folder4/The Painter of Lost Memories.txt:
+fe8fcbe41e97026a90bd501cf1d1c4c139e757dffffbb79774036ad01e7222e7
+
+./example/folder4/The Secret Melody of Whispering Woods.txt:
+9b79200d8cf4e39e5e1d3103f06cf9748d1b2cd6471ea1d3842bba18f60b4ffb
+
+./example/folder5/fguba.jpg:
+e66f445fcf1be30ca6272284ed26cb3f85f2978b13caaf2ba4cb3476deeff335
+
+./example/folder5/fun_cool_stuff.pdf:
+c549723562dfbe6af2c951db2cbc1de1e342dfb7c45f3d86f5e93298dc39ea8e
 
