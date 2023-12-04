@@ -241,6 +241,7 @@ void Peer::initQueryHit(Query qry)
   QueryHit newQryH;
   newQryH.id = qry.id;
   newQryH.destPeer = selfInfo;
+  newQryH.destPeer.port = filePort;
   string prevHost = string(qry.prevHost);
   int target_fd = peerMap[prevHost].socket_fd;
   cout<< "Init queryHit and send back to "<< prevHost <<endl;
