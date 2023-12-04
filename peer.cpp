@@ -263,7 +263,7 @@ void Peer::forwardQueryHit(QueryHit qryh)
   }
   if (targetHost.size() < 1 || target_fd < 0)
   {
-    cout << "Failed to find previous host socket in the peerMap" << endl;
+    cout << "Failed to find previous host socket in the peerMap: " << targetHost << " " <<target_fd << endl;
     return;
   }
   sendQueryHit(qryh, targetHost, target_fd);
@@ -356,6 +356,7 @@ void Peer::handleFileRequest(int socket_fd)
     close(socket_fd);
     return;
   }
+  cout<<"Peer "<<qid.initHost<<" ask for "<<qid.fileHash<<endl;
   ContentMeta resMeta;
   memset(&resMeta, 0, sizeof(resMeta));
   string key = genQueryIdString(qid);
@@ -440,7 +441,7 @@ void Peer::runSelect()
             cout<<"received query from "<<qry.prevHost<<endl;
             handleQuery(qry);
           }
-          else
+          else if(queryType==TYPE_QUERYHIT)
           {
             QueryHit qryh;
             status = recv(target_fd, &qryh, sizeof(QueryHit), 0);
@@ -487,6 +488,7 @@ void Peer::runFilePort(unsigned short int port){
   while(true){
       int curr_fd = try_accept(file_fd);
       if(curr_fd != -1){
+        cout<<"Hand a connection on file port"<<endl;
         handleFileRequest(curr_fd);
       }
     }
