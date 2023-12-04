@@ -12,9 +12,9 @@ PROGRAM=$(BIN)/testPingPong $(BIN)/client
 all: $(BIN)/testPingPong $(BIN)/client
 
 $(BIN)/testPingPong: $(OBJS_peer)
-	g++ $(CPPFLAGS) -o $@ $(OBJS_peer) $(SSLFLAG)
+	g++ $(CPPFLAGS) -o $@ $(OBJS_peer) $(SSLFLAG) -l pthread
 $(BIN)/testQuery: $(OBJS_peer)
-	g++ $(CPPFLAGS) -o $@ $(OBJS_peer) $(SSLFLAG)
+	g++ $(CPPFLAGS) -o $@ $(OBJS_peer) $(SSLFLAG) -l pthread
 $(BIN)/client: $(OBJS_client)
 	g++ $(CPPFLAGS) -o $@ $(OBJS_client) $(SSLFLAG)
 

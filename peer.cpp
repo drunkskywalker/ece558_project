@@ -368,7 +368,8 @@ void Peer::handleFileRequest(int socket_fd)
       const char *content_cstr = content.c_str();
       resMeta.status = true;
       resMeta.length = strlen(content_cstr);
-      sprintf(resMeta.fileName, "%s", filePath.substr(filePath.find_last_of("/\\") + 1));
+      string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+      sprintf(resMeta.fileName, "%s", fileName.c_str());
 
       if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0)
       {
@@ -491,14 +492,15 @@ void Peer::run(vector<PeerInfo> & famousIdList){
       exit(EXIT_FAILURE);
     }
 
-    thread ping_t(&runPingPort,this,pingPort);
-    thread user_t(&runUserPort,this,userPort);
-    thread file_t(&runFilePort,this,filePort);
-    thread select_t(&runSelect,this);
+    thread ping_t(&Peer::runPingPort,this,pingPort);
+    // thread user_t(&runUserPort,this,userPort);
+    thread file_t(&Peer::runFilePort,this,filePort);
+    thread select_t(&Peer::runSelect,this);
 
     ping_t.detach();
-    user_t.detach();
+    // user_t.detach();
     file_t.detach();
     select_t.detach();
 
+    runUserPort(userPort);
 }
