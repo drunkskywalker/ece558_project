@@ -1,7 +1,7 @@
 #include <sys/socket.h>
 
-#define TYPE_QUERY 0
-#define TYPE_QUERYHIT 1
+#define TYPE_QUERY 101
+#define TYPE_QUERYHIT 102
 
 struct PeerInfo_t {
   char hostname[256];
