@@ -106,7 +106,7 @@ int directoryCheck(string & dir) {
 }
 
 void help() {
-  cout << "What do you want to do?\n====================\n"
+  cout << "====================\nWhat do you want to do?\n====================\n"
        << "[Q] Send query to peers\n"
        << "[C] Check if a file exists\n"
        << "[L] Load a file\n"
