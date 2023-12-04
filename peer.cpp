@@ -22,7 +22,8 @@ int Peer::joinP2P(vector<PeerInfo> &famousIdList)
 
   for (PeerInfo pio : famousIdList)
   {
-    if (selfInfo.hostname != pio.hostname)
+    
+    if (strcmp(selfInfo.hostname, pio.hostname)!=0)
     {
       peerQueue.push_back(pio);
     }
@@ -370,6 +371,7 @@ void Peer::handleFileRequest(int socket_fd)
       fileContent << file.rdbuf();
       file.close();
       string content = fileContent.str();
+      cout <<"============The content is================\n"<<content<<"\n============The content end=============== \n";
       const char *content_cstr = content.c_str();
       resMeta.status = true;
       resMeta.length = strlen(content_cstr);
@@ -378,8 +380,10 @@ void Peer::handleFileRequest(int socket_fd)
 
       if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0)
       {
+        cout<<"Send metadata to "<< qid.initHost << " with content lenght "<<resMeta.length<<endl;
         if (send(socket_fd, &content_cstr, strlen(content_cstr), 0) >= 0)
         {
+          cout<<"Send content to "<< qid.initHost<<endl;
           filePathMap.erase(key);
         }
       }
@@ -488,7 +492,7 @@ void Peer::runFilePort(unsigned short int port){
   while(true){
       int curr_fd = try_accept(file_fd);
       if(curr_fd != -1){
-        cout<<"Hand a connection on file port"<<endl;
+        cout<<"Had a connection on file port"<<endl;
         handleFileRequest(curr_fd);
       }
     }
