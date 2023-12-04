@@ -3,6 +3,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <thread>
+#include <deque>
+#include <set>
+#include <fstream>
 
 #include "hash.hpp"
 #include "socketUtils.hpp"

@@ -14,6 +14,6 @@ void connectionEnd(int byte);
 int buildServer(const char * port);
 int buildClient(const char * hostname, const char * port);
 int request_connection(const char *hostname, const char *port );
-
+int try_accept(int socket_fd);
 
 #endif

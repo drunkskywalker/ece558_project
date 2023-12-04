@@ -9,7 +9,7 @@ void errorHandle(int status,
     if (hostname != NULL && port != NULL) {
       std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
     }
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 void connectionEnd(int byte) {
@@ -121,3 +121,14 @@ int request_connection(const char * hostname, const char * port) {
   freeaddrinfo(host_info_list);
   return socket_fd;
 }
+
+int try_accept(int socket_fd) {
+    struct sockaddr_storage socket_addr;
+    socklen_t socket_addr_len = sizeof(socket_addr);
+    int client_fd = accept(socket_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
+    if (client_fd == -1) {
+      std::cerr << "Error on Accept: cannot accept a connection" << std::endl;
+      return -1;
+    }
+    return client_fd;
+  }

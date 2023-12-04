@@ -1,8 +1,6 @@
 #include "peer.hpp"
 
-#include <deque>
-#include <set>
-#include <fstream>
+
 
 string Peer::genQueryIdString(QueryId id)
 {
@@ -272,7 +270,7 @@ void Peer::handleQueryHit(QueryHit qryh)
   // If is initial host -> start file request
   if (strcmp(qryh.id.initHost, selfInfo.hostname) == 0)
   {
-    string key = genQueryIdString(qryh.id);
+    string key(qryh.id.fileHash);
     if (queryStatusMap.find(key) != queryStatusMap.end() && !queryStatusMap[key].finished)
     {
       queryStatusMap[key].finished = true;
@@ -289,7 +287,7 @@ void Peer::handleQueryHit(QueryHit qryh)
 
 void Peer::initFileRequest(QueryId qid, PeerInfo pif)
 {
-  string key = genQueryIdString(qid);
+  string key(qid.fileHash);
   int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
   if (dest_fd < 0)
   {
@@ -447,4 +445,60 @@ void Peer::runSelect()
       }
     }
   }
+}
+
+ void Peer::runPingPort(unsigned short int port){
+    int ping_fd = buildServer(to_string(port).c_str());
+    while(true){
+      int curr_fd = try_accept(ping_fd);
+      if(curr_fd != -1){
+        handlePing(curr_fd);
+      }
+    }
+ }
+
+ void Peer::runUserPort(unsigned short int port){
+    int user_fd = buildServer(to_string(port).c_str());
+    char recvHash[128];
+    
+    while(true){
+      int curr_fd = try_accept(user_fd);
+      if(curr_fd != -1){
+        memset(&recvHash, 0, sizeof(recvHash));
+        if(recv(curr_fd, &recvHash, sizeof(recvHash), MSG_WAITALL) > 0){
+          string hash_str(recvHash);
+            if(hash_str.length()==64 && queryStatusMap.find(hash_str)==queryStatusMap.end()){
+              initQuery(hash_str);
+            }
+        }
+        close(curr_fd);
+      }
+    }
+ }
+
+void Peer::runFilePort(unsigned short int port){
+  int file_fd = buildServer(to_string(port).c_str());
+  while(true){
+      int curr_fd = try_accept(file_fd);
+      if(curr_fd != -1){
+        handleFileRequest(curr_fd);
+      }
+    }
+}
+
+void Peer::run(vector<PeerInfo> & famousIdList){
+    if(joinP2P(famousIdList)<0){
+      exit(EXIT_FAILURE);
+    }
+
+    thread ping_t(&runPingPort,this,pingPort);
+    thread user_t(&runUserPort,this,userPort);
+    thread file_t(&runFilePort,this,filePort);
+    thread select_t(&runSelect,this);
+
+    ping_t.detach();
+    user_t.detach();
+    file_t.detach();
+    select_t.detach();
+
 }
