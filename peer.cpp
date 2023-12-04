@@ -381,7 +381,7 @@ void Peer::handleFileRequest(int socket_fd)
       if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0)
       {
         cout<<"Send metadata to "<< qid.initHost << " with content lenght "<<resMeta.length<<endl;
-        if (send(socket_fd, &content_cstr, strlen(content_cstr), 0) >= 0)
+        if (send(socket_fd, content_cstr, strlen(content_cstr), 0) >= 0)
         {
           cout<<"Send content to "<< qid.initHost<<endl;
           filePathMap.erase(key);
