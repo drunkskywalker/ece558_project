@@ -112,7 +112,7 @@ void help() {
 }
 
 int main() {
-  json jsonData = readJson("../config.json");
+  json jsonData = readJson("./config.json");
   int port = jsonData["userPort"];
   int socket = buildClient("127.0.0.1", to_string(port).c_str());
   string dir = jsonData["directory"];
