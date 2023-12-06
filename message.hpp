@@ -61,5 +61,7 @@ struct ContentMeta_t {
   bool status;
   char fileName[256];
   size_t length;
+  char iv[16];
+  char tag[16];
 };
 typedef struct ContentMeta_t ContentMeta;
