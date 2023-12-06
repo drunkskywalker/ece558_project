@@ -387,7 +387,7 @@ void Peer::handleFileRequest(int socket_fd) {
     int bytesSent = 1;
 
     // update: encrypt file, get iv, get tag, store in meta, send encrypted file
-    string outfile = "\tmp\encryption";
+    string outfile = "/tmp/encryption";
 
     const unsigned char * kmessage = (const unsigned char *)(shared_secret_str.c_str());
     size_t message_len = shared_secret_str.size();
