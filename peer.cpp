@@ -325,6 +325,8 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
     cout << "Hash not match" << endl;
     close(dest_fd);
     queryStatusMap[key].finished = false;
+    // delete the file
+    remove(outname.c_str());
     return;
   }
 
