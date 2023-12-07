@@ -62,6 +62,6 @@ struct ContentMeta_t {
   char fileName[256];
   size_t length;
   char iv[16];
-  char tag[16];
+  char tag[24];
 };
 typedef struct ContentMeta_t ContentMeta;
