@@ -309,6 +309,19 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
   // update: decrypt file
   unsigned char * kmessage = (unsigned char *)(shared_secret_str.c_str());
   size_t message_len = shared_secret_str.size();
+
+  cout << "decrypting file" << endl;
+  for (int i = 0; i < 16; i++) {
+    cout << (int)kmessage[i] << " ";
+  }
+  cout << endl;
+  for (int i = 0; i < 16; i++) {
+    cout << (int)tag[i] << " ";
+  }
+  cout << endl;
+  for (int i = 0; i < 16; i++) {
+    cout << (int)iv[i] << " ";
+  }
   if (!decrypt(inname, outname, kmessage, tag, iv, 16)) {
     cout << "Failed to decrypt file" << endl;
     close(dest_fd);
@@ -409,6 +422,18 @@ void Peer::handleFileRequest(int socket_fd) {
     }
     fclose(fptr);
 
+    cout << "decrypting file" << endl;
+    for (int i = 0; i < 16; i++) {
+      cout << (int)kmessage[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < 16; i++) {
+      cout << (int)tag[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < 16; i++) {
+      cout << (int)iv[i] << " ";
+    }
     if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0) {
       cout << "Send metadata to " << qid.initHost << " with content lenght "
            << resMeta.length << endl;
