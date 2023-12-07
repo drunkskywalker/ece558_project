@@ -274,9 +274,9 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
     return;
   }
 
-  unsigned char iv[16], tag[16];
+  unsigned char iv[16], tag[24];
   memcpy(iv, fileMeta.iv, 16);
-  memcpy(tag, fileMeta.tag, 16);
+  memcpy(tag, fileMeta.tag, 24);
   string inname = "/tmp/encrypted";
   vector<char> content;
   char buffer[2048];
@@ -309,20 +309,10 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
   // update: decrypt file
   unsigned char * kmessage = (unsigned char *)(shared_secret_str.c_str());
   size_t message_len = shared_secret_str.size();
-
-  cout << "decrypting file" << endl;
-  for (int i = 0; i < 16; i++) {
-    cout << (int)kmessage[i] << " ";
-  }
-  cout << endl;
-  for (int i = 0; i < 16; i++) {
-    cout << (int)tag[i] << " ";
-  }
-  cout << endl;
-  for (int i = 0; i < 16; i++) {
-    cout << (int)iv[i] << " ";
-  }
-  if (!decrypt(inname, outname, kmessage, tag, iv, 16)) {
+  unsigned char * digest;
+  unsigned int digest_len;
+  digest_message(kmessage, message_len, &digest, &digest_len);
+  if (!decrypt(inname, outname, digest, tag, iv, 16)) {
     cout << "Failed to decrypt file" << endl;
     close(dest_fd);
     queryStatusMap[key].finished = false;
@@ -408,8 +398,8 @@ void Peer::handleFileRequest(int socket_fd) {
     unsigned char * digest;
     unsigned int digest_len;
     digest_message(kmessage, message_len, &digest, &digest_len);
-    unsigned char tag[16];
-    memset(tag, 0, 16);
+    unsigned char tag[24];
+    memset(tag, 0, 24);
     unsigned char iv[16];
     RAND_bytes(iv, 16);
 
@@ -417,23 +407,11 @@ void Peer::handleFileRequest(int socket_fd) {
       resMeta.status = false;
     }
     else {
-      memcpy(resMeta.tag, tag, 16);
+      memcpy(resMeta.tag, tag, 24);
       memcpy(resMeta.iv, iv, 16);
     }
     fclose(fptr);
 
-    cout << "decrypting file" << endl;
-    for (int i = 0; i < 16; i++) {
-      cout << (int)kmessage[i] << " ";
-    }
-    cout << endl;
-    for (int i = 0; i < 16; i++) {
-      cout << (int)tag[i] << " ";
-    }
-    cout << endl;
-    for (int i = 0; i < 16; i++) {
-      cout << (int)iv[i] << " ";
-    }
     if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0) {
       cout << "Send metadata to " << qid.initHost << " with content lenght "
            << resMeta.length << endl;
