@@ -1,12 +1,12 @@
 #ifndef PEER
 #define PEER
-#include <map>
-#include <string>
-#include <vector>
-#include <thread>
 #include <deque>
-#include <set>
 #include <fstream>
+#include <map>
+#include <set>
+#include <string>
+#include <thread>
+#include <vector>
 
 #include "hash.hpp"
 #include "socketUtils.hpp"
@@ -25,6 +25,8 @@ class Peer {
   PeerInfo selfInfo;
 
   string fileDir;  // Directory for files
+
+  bool secure;
 
   map<string, PeerStore> peerMap;           // Host -> peer_info, socket_fd
   map<string, Query> queryForwardMap;       // QueryId ->  (prev host, time)
@@ -71,7 +73,7 @@ class Peer {
      */
   void handleQuery(Query qry);
 
-  void sendQueryHit(QueryHit qryh,string prevHost, int target_fd);
+  void sendQueryHit(QueryHit qryh, string prevHost, int target_fd);
 
   /**
      * After finding the file in local directory, generate the Queryhit
@@ -94,7 +96,6 @@ class Peer {
      * Otherwise, change the status in queryStatusMap, and initFileRequest.
      */
   void handleQueryHit(QueryHit qryh);
-
   /**
      * 1. Connect to the destPeer in QueryHit
      * 2. Send QueryId to the destPeer
@@ -105,7 +106,11 @@ class Peer {
      * 5. Check content by hashing and comparing with the fileHash
      * 6. Save content and send ok status to destPeer to indicate success
      * 7. Tell user about the status
+     * 
+     * secure: uses DH exchange and AES256GCM
      */
+  void initFileRequestInsecure(QueryId qid, PeerInfo pif);
+  void initFileRequestSecure(QueryId qid, PeerInfo pif);
   void initFileRequest(QueryId qid, PeerInfo pif);
 
   /**
@@ -117,7 +122,11 @@ class Peer {
      * 3. Send content through the socket
      * 4. Receive status from the socket, close socket, and delete the field
      *    from queryForwardMap
+     * secure: uses DH exchange and AES256GCM
      */
+
+  void handleFileRequestInsecure(int socket_fd);
+  void handleFileRequestSecure(int socket_fd);
   void handleFileRequest(int socket_fd);
 
   /**
@@ -150,7 +159,8 @@ class Peer {
        int ttl,
        int tte,
        int ttc,
-       string dir) :
+       string dir,
+       bool secure) :
       initPeerNum(ipn),
       maxPeerNum(mpn),
       pingPort(pprt),
@@ -159,7 +169,8 @@ class Peer {
       TTL(ttl),
       timeToErase(tte),
       timeToCheck(ttc),
-      fileDir(dir) {}
+      fileDir(dir),
+      secure(secure) {}
 
   /**
      * Run the service

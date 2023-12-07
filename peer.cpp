@@ -246,7 +246,7 @@ void Peer::handleQueryHit(QueryHit qryh) {
 
 //TODO: Diffie-Hellman, decrypt file
 
-void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
+void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
   string key(qid.fileHash);
   int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
   if (dest_fd < 0) {
@@ -339,9 +339,57 @@ void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
   */
 }
 
-// TODO: Diffie-Hellman, encrypt file
+void Peer::initFileRequestInsecure(QueryId qid, PeerInfo pif) {
+  string key(qid.fileHash);
+  int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
+  if (dest_fd < 0) {
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  if (send(dest_fd, &qid, sizeof(qid), 0) < 0) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  ContentMeta fileMeta;
+  memset(&fileMeta, 0, sizeof(fileMeta));
+  if (recv(dest_fd, &fileMeta, sizeof(fileMeta), MSG_WAITALL) < 0) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  if (!fileMeta.status) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  vector<char> content;
+  char buffer[2048];
+  size_t currLen = 0;
+  int len;
+  while (currLen < fileMeta.length) {
+    memset(&buffer, 0, sizeof(buffer));
+    if ((len = recv(dest_fd, &buffer, sizeof(buffer), MSG_WAITALL)) < 0) {
+      close(dest_fd);
+      queryStatusMap[key].finished = false;
+      return;
+    }
+    currLen += len;
+    content.insert(content.end(), buffer, buffer + len);
+  }
+  string currHash = getVectorCharHash(content);
+  if (strcmp(currHash.c_str(), qid.fileHash) != 0) {
+    close(dest_fd);
+    queryStatusMap[key].finished = false;
+    return;
+  }
+  ofstream saveFile;
+  saveFile.open(fileDir + fileMeta.fileName);
+  saveFile << string(content.begin(), content.end());
+  saveFile.close();
+}
 
-void Peer::handleFileRequest(int socket_fd) {
+void Peer::handleFileRequestSecure(int socket_fd) {
   string shared_secret_str = alice(socket_fd);
 
   cout << "shared secret is " << shared_secret_str << endl;
@@ -361,16 +409,6 @@ void Peer::handleFileRequest(int socket_fd) {
   string key = genQueryIdString(qid);
   if (filePathMap.find(key) != filePathMap.end()) {
     string filePath = filePathMap[key];
-    // ifstream file(filePath, ios::binary);
-
-    // if (file.is_open()) {
-    // ostringstream fileContent;
-    // fileContent << file.rdbuf();
-    // file.close();
-    // string content = fileContent.str();
-    // cout << "============The content is================\n"
-    //      << content << "\n============The content end=============== \n";
-    // const char * content_cstr = content.c_str();
 
     FILE * fptr = fopen(filePath.c_str(), "rb");
     if (fptr == NULL) {
@@ -428,6 +466,59 @@ void Peer::handleFileRequest(int socket_fd) {
         cout << "Send all content to " << qid.initHost << endl;
         filePathMap.erase(key);
       }
+
+      fclose(fptr);
+      close(socket_fd);
+      return;
+    }
+  }
+}
+
+void Peer::handleFileRequestInsecure(int socket_fd) {
+  QueryId qid;
+  memset(&qid, 0, sizeof(qid));
+  if (recv(socket_fd, &qid, sizeof(qid), MSG_WAITALL) < 0) {
+    close(socket_fd);
+    return;
+  }
+  cout << "Peer " << qid.initHost << " ask for " << qid.fileHash << endl;
+  ContentMeta resMeta;
+  memset(&resMeta, 0, sizeof(resMeta));
+  string key = genQueryIdString(qid);
+  if (filePathMap.find(key) != filePathMap.end()) {
+    string filePath = filePathMap[key];
+
+    FILE * fptr = fopen(filePath.c_str(), "rb");
+    if (fptr == NULL) {
+      cout << "Failed to open file " << filePath << endl;
+      resMeta.status = false;
+      filePathMap.erase(key);
+      send(socket_fd, &resMeta, sizeof(resMeta), 0);
+      close(socket_fd);
+      return;
+    }
+    // get file size
+    fseek(fptr, 0, SEEK_END);
+    int fileSize = ftell(fptr);
+    resMeta.status = true;
+    resMeta.length = fileSize;
+    string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+    sprintf(resMeta.fileName, "%s", fileName.c_str());
+    off_t offset = 0;
+    int bytesSent = 1;
+    if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0) {
+      cout << "Send metadata to " << qid.initHost << " with content lenght "
+           << resMeta.length << endl;
+      if (fptr) {
+        while (bytesSent > 0) {
+          bytesSent = sendfile(socket_fd, fptr->_fileno, &offset, 2048);
+          std::cout << "sended bytes : " << offset << '\n';
+        }
+      }
+      if (offset == fileSize) {
+        cout << "Send all content to " << qid.initHost << endl;
+        filePathMap.erase(key);
+      }
       // if (send(socket_fd, content_cstr, strlen(content_cstr), 0) >= 0) {
       //   cout << "Send content to " << qid.initHost << endl;
       //   filePathMap.erase(key);
@@ -438,13 +529,24 @@ void Peer::handleFileRequest(int socket_fd) {
       return;
     }
   }
-  // } else {
-  //     resMeta.status = false;
-  //     filePathMap.erase(key);
-  //     send(socket_fd, &resMeta, sizeof(resMeta), 0);
-  //     close(socket_fd);
-  //     return;
-  // }
+}
+
+void Peer::initFileRequest(QueryId qid, PeerInfo pif) {
+  if (secure) {
+    initFileRequestSecure(qid, pif);
+  }
+  else {
+    initFileRequestInsecure(qid, pif);
+  }
+}
+
+void Peer::handleFileRequest(int socket_fd) {
+  if (secure) {
+    handleFileRequestSecure(socket_fd);
+  }
+  else {
+    handleFileRequestInsecure(socket_fd);
+  }
 }
 
 void Peer::runSelect() {

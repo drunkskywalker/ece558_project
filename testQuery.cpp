@@ -1,7 +1,7 @@
 
 #include "peer.hpp"
 int main() {
-  Peer peer1 = Peer(2, 5, 65535, 65534, 65533, 0, 0, 0, ".");
+  Peer peer1 = Peer(2, 5, 65535, 65534, 65533, 0, 0, 0, ".", false);
   vector<PeerInfo> peerList;
   PeerInfo pi;
   sprintf(pi.hostname, "%s", "vcm-32429.vm.duke.edu");
