@@ -27,6 +27,7 @@ int Peer::joinP2P(vector<PeerInfo> & famousIdList) {
   selfPing.selfInfo = selfInfo;
   set<string> visited;
   // int status;
+  std::lock_guard<std::mutex> guard(peerLock);
   while (!peerQueue.empty() && peerMap.size() < initPeerNum) {
     PeerInfo currPeer = peerQueue.front();
     peerQueue.pop_front();
@@ -51,6 +52,7 @@ int Peer::joinP2P(vector<PeerInfo> & famousIdList) {
       PeerStore currStore;
       currStore.peerinfo = currPeer;
       currStore.socket_fd = currSocket;
+      std::lock_guard<std::mutex> guard(peerLock);
       peerMap[string(string(currPeer.hostname))] = currStore;
     }
     for (int i = 0; i < currPong.peerNum; i++) {
@@ -77,6 +79,7 @@ void Peer::handlePing(int socket_fd) {
   PeerStore resultStore;
   resultStore.peerinfo = currPing.selfInfo;
   resultStore.socket_fd = socket_fd;
+  std::lock_guard<std::mutex> guard(peerLock);
   if (peerMap.find(string(currPing.selfInfo.hostname)) != peerMap.end()) {
     resultPong.canConnect = true;
     peerMap[string(currPing.selfInfo.hostname)] = resultStore;
@@ -112,6 +115,7 @@ void Peer::sendAll(Query qry) {
   if (qry.TTL <= 0) {
     return;
   }
+  std::lock_guard<std::mutex> guard(peerLock);
   for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end(); ++it) {
     // target hostname is not prevHost, and target hostname is not initHost
     if ((strcmp(it->first.c_str(), qry.prevHost) != 0 &&
@@ -152,6 +156,7 @@ void Peer::initQuery(string fileHash) {
   QueryStatus qs;
   qs.finished = false;
   qs.timeStamp = qry.id.timeStamp;
+  std::lock_guard<std::mutex> guard(queryStatusLock);
   queryStatusMap[fileHash] = qs;
 
   string queryId = genQueryIdString(qry.id);
@@ -159,6 +164,7 @@ void Peer::initQuery(string fileHash) {
   // query forward map: this query has been forwarded. (in this case sent by self)
 
   sendAll(qry);
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   queryForwardMap[queryId] = qry;
 }
 
@@ -166,6 +172,7 @@ void Peer::handleQuery(Query qry) {
   string queryId = genQueryIdString(qry.id);
 
   // only process unprocessed query
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   if (queryForwardMap.find(queryId) == queryForwardMap.end()) {
     queryForwardMap[queryId] = qry;
     string fileHash = qry.id.fileHash;
@@ -173,6 +180,7 @@ void Peer::handleQuery(Query qry) {
     // self has the file
     if (checkFileExist(fileHash, fileDir)) {
       string filePath = findFileName(fileHash, fileDir);
+      std::lock_guard<std::mutex> guard(filePathLock);
       filePathMap[queryId] = filePath;
       initQueryHit(qry);
     }
@@ -188,12 +196,14 @@ void Peer::sendQueryHit(QueryHit qryh, string prevHost, int target_fd) {
   if (send(target_fd, &flag, sizeof(int), 0) < 0) {
     cout << "Failed to send QueryHit to peer " << prevHost << "\n";
     close(target_fd);
+    std::lock_guard<std::mutex> guard(peerLock);
     peerMap.erase(prevHost);
     return;
   }
   if (send(target_fd, &qryh, sizeof(qryh), 0) < 0) {
     cout << "Failed to send QueryHit to peer " << prevHost << "\n";
     close(target_fd);
+    std::lock_guard<std::mutex> guard(peerLock);
     peerMap.erase(prevHost);
   }
 }
@@ -204,6 +214,7 @@ void Peer::initQueryHit(Query qry) {
   newQryH.destPeer = selfInfo;
   newQryH.destPeer.port = filePort;
   string prevHost = string(qry.prevHost);
+  std::lock_guard<std::mutex> guard(peerLock);
   int target_fd = peerMap[prevHost].socket_fd;
   cout << "Init queryHit and send back to " << prevHost << endl;
   sendQueryHit(newQryH, prevHost, target_fd);
@@ -213,9 +224,11 @@ void Peer::forwardQueryHit(QueryHit qryh) {
   string key = genQueryIdString(qryh.id);
   string targetHost = "";
   int target_fd = -1;
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   if (queryForwardMap.find(key) != queryForwardMap.end()) {
     targetHost = string(queryForwardMap[key].prevHost);
   }
+  std::lock_guard<std::mutex> guard(peerLock);
   if (peerMap.find(targetHost) != peerMap.end()) {
     target_fd = peerMap[targetHost].socket_fd;
   }
@@ -231,6 +244,7 @@ void Peer::handleQueryHit(QueryHit qryh) {
   // If is initial host -> start file request
   if (strcmp(qryh.id.initHost, selfInfo.hostname) == 0) {
     string key(qryh.id.fileHash);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     if (queryStatusMap.find(key) != queryStatusMap.end() &&
         !queryStatusMap[key].finished) {
       queryStatusMap[key].finished = true;
@@ -250,14 +264,16 @@ void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
   string key(qid.fileHash);
   int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
   if (dest_fd < 0) {
-    queryStatusMap[key].finished = false;
-    return;
+      std::lock_guard<std::mutex> guard(queryStatusLock);
+      queryStatusMap[key].finished = false;
+      return;
   }
   string shared_secret_str = bob(dest_fd);
   cout << "shared secret is " << shared_secret_str << endl;
 
   if (send(dest_fd, &qid, sizeof(qid), 0) < 0) {
     close(dest_fd);
+      std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -265,11 +281,13 @@ void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
   memset(&fileMeta, 0, sizeof(fileMeta));
   if (recv(dest_fd, &fileMeta, sizeof(fileMeta), MSG_WAITALL) < 0) {
     close(dest_fd);
+      std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
   if (!fileMeta.status) {
     close(dest_fd);
+      std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -286,6 +304,7 @@ void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
     memset(&buffer, 0, sizeof(buffer));
     if ((len = recv(dest_fd, &buffer, sizeof(buffer), MSG_WAITALL)) < 0) {
       close(dest_fd);
+      std::lock_guard<std::mutex> guard(queryStatusLock);
       queryStatusMap[key].finished = false;
       return;
     }
@@ -315,6 +334,7 @@ void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
   if (!decrypt(inname, outname, digest, tag, iv, 16)) {
     cout << "Failed to decrypt file" << endl;
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -324,6 +344,7 @@ void Peer::initFileRequestSecure(QueryId qid, PeerInfo pif) {
   if (strcmp(currHash.c_str(), qid.fileHash) != 0) {
     cout << "Hash not match" << endl;
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     // delete the file
     remove(outname.c_str());
@@ -343,11 +364,13 @@ void Peer::initFileRequestInsecure(QueryId qid, PeerInfo pif) {
   string key(qid.fileHash);
   int dest_fd = request_connection(pif.hostname, to_string(pif.port).c_str());
   if (dest_fd < 0) {
-    queryStatusMap[key].finished = false;
-    return;
+      std::lock_guard<std::mutex> guard(queryStatusLock);
+      queryStatusMap[key].finished = false;
+      return;
   }
   if (send(dest_fd, &qid, sizeof(qid), 0) < 0) {
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -355,11 +378,13 @@ void Peer::initFileRequestInsecure(QueryId qid, PeerInfo pif) {
   memset(&fileMeta, 0, sizeof(fileMeta));
   if (recv(dest_fd, &fileMeta, sizeof(fileMeta), MSG_WAITALL) < 0) {
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
   if (!fileMeta.status) {
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -371,6 +396,7 @@ void Peer::initFileRequestInsecure(QueryId qid, PeerInfo pif) {
     memset(&buffer, 0, sizeof(buffer));
     if ((len = recv(dest_fd, &buffer, sizeof(buffer), MSG_WAITALL)) < 0) {
       close(dest_fd);
+      std::lock_guard<std::mutex> guard(queryStatusLock);
       queryStatusMap[key].finished = false;
       return;
     }
@@ -380,6 +406,7 @@ void Peer::initFileRequestInsecure(QueryId qid, PeerInfo pif) {
   string currHash = getVectorCharHash(content);
   if (strcmp(currHash.c_str(), qid.fileHash) != 0) {
     close(dest_fd);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     queryStatusMap[key].finished = false;
     return;
   }
@@ -407,17 +434,18 @@ void Peer::handleFileRequestSecure(int socket_fd) {
   RAND_bytes(iv, 16);
   memcpy(resMeta.iv, iv, 16);
   string key = genQueryIdString(qid);
+  std::lock_guard<std::mutex> guard(filePathLock);
   if (filePathMap.find(key) != filePathMap.end()) {
-    string filePath = filePathMap[key];
-
-    FILE * fptr = fopen(filePath.c_str(), "rb");
-    if (fptr == NULL) {
-      cout << "Failed to open file " << filePath << endl;
-      resMeta.status = false;
-      filePathMap.erase(key);
-      send(socket_fd, &resMeta, sizeof(resMeta), 0);
-      close(socket_fd);
-      return;
+      std::lock_guard<std::mutex> guard(filePathLock);
+      string filePath = filePathMap[key];
+      FILE *fptr = fopen(filePath.c_str(), "rb");
+      if (fptr == NULL) {
+          cout << "Failed to open file " << filePath << endl;
+          resMeta.status = false;
+          filePathMap.erase(key);
+          send(socket_fd, &resMeta, sizeof(resMeta), 0);
+          close(socket_fd);
+          return;
     }
     // get file size
     fseek(fptr, 0, SEEK_END);
@@ -485,6 +513,7 @@ void Peer::handleFileRequestInsecure(int socket_fd) {
   ContentMeta resMeta;
   memset(&resMeta, 0, sizeof(resMeta));
   string key = genQueryIdString(qid);
+  std::lock_guard<std::mutex> guard(filePathLock);
   if (filePathMap.find(key) != filePathMap.end()) {
     string filePath = filePathMap[key];
 
@@ -560,6 +589,7 @@ void Peer::runSelect() {
   while (true) {
     FD_ZERO(&peersFDSet);
     int nfds = 0;
+    std::lock_guard<std::mutex> guard(peerLock);
     for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
          ++it) {
       FD_SET(it->second.socket_fd, &peersFDSet);
@@ -623,6 +653,7 @@ void Peer::runUserPort(unsigned short int port) {
       memset(&recvHash, 0, sizeof(recvHash));
       if (recv(curr_fd, &recvHash, 64, MSG_WAITALL) > 0) {
         string hash_str(recvHash);
+        std::lock_guard<std::mutex> guard(queryStatusLock);
         if (hash_str.length() == 64 &&
             queryStatusMap.find(hash_str) == queryStatusMap.end()) {
           initQuery(hash_str);
