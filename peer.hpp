@@ -1,13 +1,13 @@
 #ifndef PEER
 #define PEER
-#include <map>
-#include <string>
-#include <vector>
-#include <thread>
 #include <deque>
-#include <set>
-#include <mutex>
 #include <fstream>
+#include <map>
+#include <mutex>
+#include <set>
+#include <string>
+#include <thread>
+#include <vector>
 
 #include "hash.hpp"
 #include "socketUtils.hpp"
@@ -76,7 +76,7 @@ class Peer {
      */
   void handleQuery(Query qry);
 
-  void sendQueryHit(QueryHit qryh,string prevHost, int target_fd);
+  void sendQueryHit(QueryHit qryh, string prevHost, int target_fd);
 
   /**
      * After finding the file in local directory, generate the Queryhit
@@ -145,6 +145,8 @@ class Peer {
      * Wait for Query and QueryHit, use the list of ports in peerMap
      */
   void runSelect();
+
+  void runCheckTimeout();
 
   // public:
   Peer(int ipn,
