@@ -7,5 +7,6 @@
     "TTL" : 10,
     "timeToErase" : 600,
     "timeToCheck" : 300, 
-    "directory" : "./files"
+    "directory" : "./files",
+    "famousNodes": ["vcm-37283.vm.duke.edu"]
 }

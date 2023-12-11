@@ -1,5 +1,5 @@
 BIN=./bin
-CPPFLAGS=-std=c++11 -pedantic -ggdb3 -Wall 
+CPPFLAGS=-std=c++17 -pedantic -ggdb3 -Wall 
 SSLFLAG=-lcrypto -lssl
 # SRCS = $(wildcard *.cpp)
 SRCS_peer=socketUtils.cpp peer.cpp hash.cpp main.cpp

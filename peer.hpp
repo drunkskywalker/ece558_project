@@ -6,6 +6,7 @@
 #include <thread>
 #include <deque>
 #include <set>
+#include <mutex>
 #include <fstream>
 
 #include "hash.hpp"
@@ -30,6 +31,10 @@ class Peer {
   map<string, Query> queryForwardMap;       // QueryId ->  (prev host, time)
   map<string, string> filePathMap;          // QueryId -> file path
   map<string, QueryStatus> queryStatusMap;  // File hash -> (find hit, time)
+  std::mutex peerLock;
+  std::mutex queryForwardLock;
+  std::mutex filePathLock;
+  std::mutex queryStatusLock;
 
  private:
   string genQueryIdString(QueryId id);
