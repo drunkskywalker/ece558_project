@@ -2,25 +2,25 @@
 
 #include <sys/sendfile.h>
 string Peer::genQueryIdString(QueryId id) {
-    std::stringstream ss;
-    ss << id.fileHash << id.timeStamp << id.initHost;
-    return ss.str();
+  std::stringstream ss;
+  ss << id.fileHash << id.timeStamp << id.initHost;
+  return ss.str();
 }
 
-int Peer::joinP2P(vector<PeerInfo> &famousIdList) {
-    memset(&selfInfo, 0, sizeof(selfInfo));
-    if (gethostname(selfInfo.hostname, sizeof(selfInfo.hostname)) == -1) {
-        cerr << "Can not get host name correctly!\n";
-        return -1;
-    }
-    selfInfo.port = pingPort;
-    deque<PeerInfo> peerQueue;
+int Peer::joinP2P(vector<PeerInfo> & famousIdList) {
+  memset(&selfInfo, 0, sizeof(selfInfo));
+  if (gethostname(selfInfo.hostname, sizeof(selfInfo.hostname)) == -1) {
+    cerr << "Can not get host name correctly!\n";
+    return -1;
+  }
+  selfInfo.port = pingPort;
+  deque<PeerInfo> peerQueue;
 
-    for (PeerInfo pio : famousIdList) {
-        if (strcmp(selfInfo.hostname, pio.hostname) != 0) {
-            peerQueue.push_back(pio);
-        }
+  for (PeerInfo pio : famousIdList) {
+    if (strcmp(selfInfo.hostname, pio.hostname) != 0) {
+      peerQueue.push_back(pio);
     }
+  }
 
     Ping selfPing;
     Pong currPong;
@@ -140,13 +140,13 @@ void Peer::sendAll(Query qry) {
 }
 
 void Peer::initQuery(string fileHash) {
-    Query qry;
-    memset(&qry, 0, sizeof(qry));
-    qry.id.timeStamp = time(NULL);
-    sprintf(qry.id.fileHash, "%s", fileHash.c_str());
-    sprintf(qry.id.initHost, "%s", selfInfo.hostname);
-    qry.TTL = TTL + 1;
-    sprintf(qry.prevHost, "%s", selfInfo.hostname);
+  Query qry;
+  memset(&qry, 0, sizeof(qry));
+  qry.id.timeStamp = time(NULL);
+  sprintf(qry.id.fileHash, "%s", fileHash.c_str());
+  sprintf(qry.id.initHost, "%s", selfInfo.hostname);
+  qry.TTL = TTL + 1;
+  sprintf(qry.prevHost, "%s", selfInfo.hostname);
 
     // query status map: saves if the query is successfully responded
     QueryStatus qs;
@@ -155,9 +155,9 @@ void Peer::initQuery(string fileHash) {
     std::lock_guard<std::mutex> queryGuard(queryStatusLock);
     queryStatusMap[fileHash] = qs;
 
-    string queryId = genQueryIdString(qry.id);
+  string queryId = genQueryIdString(qry.id);
 
-    // query forward map: this query has been forwarded. (in this case sent by self)
+  // query forward map: this query has been forwarded. (in this case sent by self)
 
     sendAll(qry);
     std::lock_guard<std::mutex> guard(queryForwardLock);
@@ -188,18 +188,18 @@ void Peer::handleQuery(Query qry) {
 }
 
 void Peer::sendQueryHit(QueryHit qryh, string prevHost, int target_fd) {
-    int flag = TYPE_QUERYHIT;
-    if (send(target_fd, &flag, sizeof(int), 0) < 0) {
-        cout << "Failed to send QueryHit to peer " << prevHost << "\n";
-        close(target_fd);
-        peerMap.erase(prevHost);
-        return;
-    }
-    if (send(target_fd, &qryh, sizeof(qryh), 0) < 0) {
-        cout << "Failed to send QueryHit to peer " << prevHost << "\n";
-        close(target_fd);
-        peerMap.erase(prevHost);
-    }
+  int flag = TYPE_QUERYHIT;
+  if (send(target_fd, &flag, sizeof(int), 0) < 0) {
+    cout << "Failed to send QueryHit to peer " << prevHost << "\n";
+    close(target_fd);
+    peerMap.erase(prevHost);
+    return;
+  }
+  if (send(target_fd, &qryh, sizeof(qryh), 0) < 0) {
+    cout << "Failed to send QueryHit to peer " << prevHost << "\n";
+    close(target_fd);
+    peerMap.erase(prevHost);
+  }
 }
 
 void Peer::initQueryHit(Query qry) {
@@ -322,71 +322,97 @@ void Peer::handleFileRequest(int socket_fd) {
         string filePath = filePathMap[key];
         // ifstream file(filePath, ios::binary);
 
-        // if (file.is_open()) {
-        // ostringstream fileContent;
-        // fileContent << file.rdbuf();
-        // file.close();
-        // string content = fileContent.str();
-        // cout << "============The content is================\n"
-        //      << content << "\n============The content end=============== \n";
-        // const char * content_cstr = content.c_str();
-        FILE *fptr = fopen(filePath.c_str(), "rb");
-        if (fptr == NULL) {
-            cout << "Failed to open file " << filePath << endl;
-            resMeta.status = false;
-            filePathMap.erase(key);
-            send(socket_fd, &resMeta, sizeof(resMeta), 0);
-            close(socket_fd);
-            return;
-        }
-        // get file size
-        fseek(fptr, 0, SEEK_END);
-        int fileSize = ftell(fptr);
-        resMeta.status = true;
-        resMeta.length = fileSize;
-        string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
-        sprintf(resMeta.fileName, "%s", fileName.c_str());
-        off_t offset = 0;
-        int bytesSent = 1;
-        if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0) {
-            cout << "Send metadata to " << qid.initHost << " with content lenght "
-                 << resMeta.length << endl;
-            if (fptr) {
-                while (bytesSent > 0) {
-                    bytesSent = sendfile(socket_fd, fptr->_fileno, &offset, 2048);
-                    std::cout << "sended bytes : " << offset << '\n';
-                }
-            }
-            if (offset == fileSize) {
-                cout << "Send all content to " << qid.initHost << endl;
-                filePathMap.erase(key);
-            }
-            // if (send(socket_fd, content_cstr, strlen(content_cstr), 0) >= 0) {
-            //   cout << "Send content to " << qid.initHost << endl;
-            //   filePathMap.erase(key);
-            // }
-            // }
-            fclose(fptr);
-            close(socket_fd);
-            return;
-        }
+    // if (file.is_open()) {
+    // ostringstream fileContent;
+    // fileContent << file.rdbuf();
+    // file.close();
+    // string content = fileContent.str();
+    // cout << "============The content is================\n"
+    //      << content << "\n============The content end=============== \n";
+    // const char * content_cstr = content.c_str();
+
+    FILE * fptr = fopen(filePath.c_str(), "rb");
+    if (fptr == NULL) {
+      cout << "Failed to open file " << filePath << endl;
+      resMeta.status = false;
+      filePathMap.erase(key);
+      send(socket_fd, &resMeta, sizeof(resMeta), 0);
+      close(socket_fd);
+      return;
     }
-    // } else {
-    //     resMeta.status = false;
-    //     filePathMap.erase(key);
-    //     send(socket_fd, &resMeta, sizeof(resMeta), 0);
-    //     close(socket_fd);
-    //     return;
-    // }
+    // get file size
+    fseek(fptr, 0, SEEK_END);
+    int fileSize = ftell(fptr);
+    resMeta.status = true;
+    resMeta.length = fileSize;
+    string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+    sprintf(resMeta.fileName, "%s", fileName.c_str());
+    off_t offset = 0;
+    int bytesSent = 1;
+
+    // update: encrypt file, get iv, get tag, store in meta, send encrypted file
+    string outfile = "/tmp/encryption";
+
+    const unsigned char * kmessage = (const unsigned char *)(shared_secret_str.c_str());
+    size_t message_len = shared_secret_str.size();
+
+    unsigned char * digest;
+    unsigned int digest_len;
+    digest_message(kmessage, message_len, &digest, &digest_len);
+    unsigned char tag[24];
+    memset(tag, 0, 24);
+    unsigned char iv[16];
+    RAND_bytes(iv, 16);
+
+    if (!encrypt(filePath, outfile, digest, tag, iv, 16)) {
+      resMeta.status = false;
+    }
+    else {
+      memcpy(resMeta.tag, tag, 24);
+      memcpy(resMeta.iv, iv, 16);
+    }
+    fclose(fptr);
+
+    if (send(socket_fd, &resMeta, sizeof(resMeta), 0) > 0) {
+      cout << "Send metadata to " << qid.initHost << " with content lenght "
+           << resMeta.length << endl;
+      fptr = fopen(outfile.c_str(), "rb");
+      if (fptr) {
+        while (bytesSent > 0) {
+          bytesSent = sendfile(socket_fd, fptr->_fileno, &offset, 2048);
+          std::cout << "sended bytes : " << offset << '\n';
+        }
+      }
+      if (offset == fileSize) {
+        cout << "Send all content to " << qid.initHost << endl;
+        filePathMap.erase(key);
+      }
+      // if (send(socket_fd, content_cstr, strlen(content_cstr), 0) >= 0) {
+      //   cout << "Send content to " << qid.initHost << endl;
+      //   filePathMap.erase(key);
+      // }
+      // }
+      fclose(fptr);
+      close(socket_fd);
+      return;
+    }
+  }
+  // } else {
+  //     resMeta.status = false;
+  //     filePathMap.erase(key);
+  //     send(socket_fd, &resMeta, sizeof(resMeta), 0);
+  //     close(socket_fd);
+  //     return;
+  // }
 }
 
 void Peer::runSelect() {
-    fd_set peersFDSet;
+  fd_set peersFDSet;
 
-    // set timeout
-    struct timeval time;
-    time.tv_sec = 60;
-    time.tv_usec = 0;
+  // set timeout
+  struct timeval time;
+  time.tv_sec = 60;
+  time.tv_usec = 0;
 
     while (true) {
         FD_ZERO(&peersFDSet);
@@ -435,13 +461,13 @@ void Peer::runSelect() {
 }
 
 void Peer::runPingPort(unsigned short int port) {
-    int ping_fd = buildServer(to_string(port).c_str());
-    while (true) {
-        int curr_fd = try_accept(ping_fd);
-        if (curr_fd != -1) {
-            handlePing(curr_fd);
-        }
+  int ping_fd = buildServer(to_string(port).c_str());
+  while (true) {
+    int curr_fd = try_accept(ping_fd);
+    if (curr_fd != -1) {
+      handlePing(curr_fd);
     }
+  }
 }
 
 void Peer::runUserPort(unsigned short int port) {
@@ -465,30 +491,30 @@ void Peer::runUserPort(unsigned short int port) {
 }
 
 void Peer::runFilePort(unsigned short int port) {
-    int file_fd = buildServer(to_string(port).c_str());
-    while (true) {
-        int curr_fd = try_accept(file_fd);
-        if (curr_fd != -1) {
-            cout << "Had a connection on file port" << endl;
-            handleFileRequest(curr_fd);
-        }
+  int file_fd = buildServer(to_string(port).c_str());
+  while (true) {
+    int curr_fd = try_accept(file_fd);
+    if (curr_fd != -1) {
+      cout << "Had a connection on file port" << endl;
+      handleFileRequest(curr_fd);
     }
+  }
 }
 
-void Peer::run(vector<PeerInfo> &famousIdList) {
-    if (joinP2P(famousIdList) < 0) {
-        exit(EXIT_FAILURE);
-    }
+void Peer::run(vector<PeerInfo> & famousIdList) {
+  if (joinP2P(famousIdList) < 0) {
+    exit(EXIT_FAILURE);
+  }
 
-    thread ping_t(&Peer::runPingPort, this, pingPort);
-    // thread user_t(&runUserPort,this,userPort);
-    thread file_t(&Peer::runFilePort, this, filePort);
-    thread select_t(&Peer::runSelect, this);
+  thread ping_t(&Peer::runPingPort, this, pingPort);
+  // thread user_t(&runUserPort,this,userPort);
+  thread file_t(&Peer::runFilePort, this, filePort);
+  thread select_t(&Peer::runSelect, this);
 
-    ping_t.detach();
-    // user_t.detach();
-    file_t.detach();
-    select_t.detach();
+  ping_t.detach();
+  // user_t.detach();
+  file_t.detach();
+  select_t.detach();
 
-    runUserPort(userPort);
+  runUserPort(userPort);
 }
