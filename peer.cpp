@@ -52,7 +52,6 @@ int Peer::joinP2P(vector<PeerInfo> &famousIdList) {
             PeerStore currStore;
             currStore.peerinfo = currPeer;
             currStore.socket_fd = currSocket;
-            std::lock_guard<std::mutex> guard(peerLock);
             peerMap[string(string(currPeer.hostname))] = currStore;
         }
         for (int i = 0; i < currPong.peerNum; i++) {
@@ -172,12 +171,13 @@ void Peer::handleQuery(Query qry) {
     if (queryForwardMap.find(queryId) == queryForwardMap.end()) {
         queryForwardMap[queryId] = qry;
         string fileHash = qry.id.fileHash;
-
         // self has the file
         if (checkFileExist(fileHash, fileDir)) {
             string filePath = findFileName(fileHash, fileDir);
-            std::lock_guard<std::mutex> guard(filePathLock);
-            filePathMap[queryId] = filePath;
+            {
+                std::lock_guard<std::mutex> guard(filePathLock);
+                filePathMap[queryId] = filePath;
+            }
             initQueryHit(qry);
         }
         // self doesn't have the file, forward to others
@@ -192,14 +192,12 @@ void Peer::sendQueryHit(QueryHit qryh, string prevHost, int target_fd) {
     if (send(target_fd, &flag, sizeof(int), 0) < 0) {
         cout << "Failed to send QueryHit to peer " << prevHost << "\n";
         close(target_fd);
-        std::lock_guard<std::mutex> guard(peerLock);
         peerMap.erase(prevHost);
         return;
     }
     if (send(target_fd, &qryh, sizeof(qryh), 0) < 0) {
         cout << "Failed to send QueryHit to peer " << prevHost << "\n";
         close(target_fd);
-        std::lock_guard<std::mutex> guard(peerLock);
         peerMap.erase(prevHost);
     }
 }
@@ -210,7 +208,7 @@ void Peer::initQueryHit(Query qry) {
     newQryH.destPeer = selfInfo;
     newQryH.destPeer.port = filePort;
     string prevHost = string(qry.prevHost);
-    std::lock_guard<std::mutex> guard(peerLock);
+    // std::lock_guard<std::mutex> guard(peerLock);
     int target_fd = peerMap[prevHost].socket_fd;
     cout << "Init queryHit and send back to " << prevHost << endl;
     sendQueryHit(newQryH, prevHost, target_fd);
@@ -422,6 +420,7 @@ void Peer::runSelect() {
                         status = recv(target_fd, &qry, sizeof(Query), 0);
                         errorHandle(status, "Error: Receive query error", NULL, NULL);
                         cout << "received query from " << qry.prevHost << endl;
+
                         handleQuery(qry);
                     } else if (queryType == TYPE_QUERYHIT) {
                         QueryHit qryh;

@@ -20,39 +20,29 @@ json readJson(string filename) {
     file.close();
     return jsonData;
 }
-// int main() {
-//     json jsonData = readJson("./config.json");
-
-//     int initPeerNum = jsonData["initPeerNum"];
-//     int maxPeerNum = jsonData["maxPeerNum"];
-//     int pingPort = jsonData["pingPort"];
-//     int userPort = jsonData["userPort"];
-//     int filePort = jsonData["filePort"];
-//     int TTL = jsonData["TTL"];
-//     int timeToErase = jsonData["timeToErase"];
-//     int timeToCheck = jsonData["timeToCheck"];
-//     string dir = jsonData["directory"];
-//     Peer peer1(initPeerNum, maxPeerNum, pingPort, userPort, filePort, TTL, timeToErase, timeToCheck, dir);
-//     vector<PeerInfo> peerList;
-//     for (const auto& node : jsonData["famousNodes"]) {
-//         PeerInfo pi;
-//         memset(&pi, 0, sizeof(pi));
-//         strncpy(pi.hostname, "vcm-37283.vm.duke.edu", sizeof(pi.hostname));
-//         pi.hostname[sizeof(pi.hostname) - 1] = '\0';
-//         pi.port = 65535;
-//         peerList.push_back(pi);
-//     }
-
-//     peer1.run(peerList);
-//     return 0;
-// }
 int main() {
-    Peer peer1 = Peer(2, 5, 65535, 65534, 65533, 5, 0, 0, "./example/folder4/");
+    json jsonData = readJson("./config.json");
+
+    int initPeerNum = jsonData["initPeerNum"];
+    int maxPeerNum = jsonData["maxPeerNum"];
+    int pingPort = jsonData["pingPort"];
+    int userPort = jsonData["userPort"];
+    int filePort = jsonData["filePort"];
+    int TTL = jsonData["TTL"];
+    int timeToErase = jsonData["timeToErase"];
+    int timeToCheck = jsonData["timeToCheck"];
+    string dir = jsonData["directory"];
+    Peer peer1(initPeerNum, maxPeerNum, pingPort, userPort, filePort, TTL, timeToErase, timeToCheck, dir);
     vector<PeerInfo> peerList;
-    PeerInfo pi;
-    sprintf(pi.hostname, "%s", "vcm-37254.vm.duke.edu");
-    pi.port = 65535;
-    peerList.push_back(pi);
+    for (const auto& node : jsonData["famousNodes"]) {
+        PeerInfo pi;
+        memset(&pi, 0, sizeof(pi));
+        strncpy(pi.hostname, node.get<string>().c_str(), sizeof(pi.hostname));
+        pi.hostname[sizeof(pi.hostname) - 1] = '\0';
+        pi.port = 65535;
+        peerList.push_back(pi);
+    }
+
     peer1.run(peerList);
     return 0;
 }
