@@ -152,7 +152,7 @@ void Peer::initQuery(string fileHash) {
     QueryStatus qs;
     qs.finished = false;
     qs.timeStamp = qry.id.timeStamp;
-    std::lock_guard<std::mutex> queryGuard(queryStatusLock);
+
     queryStatusMap[fileHash] = qs;
 
     string queryId = genQueryIdString(qry.id);
@@ -472,12 +472,13 @@ void Peer::runSelect() {
                             status = recv(target_fd, &qry, sizeof(Query), 0);
                             errorHandle(status, "Error: Receive query error", NULL, NULL);
                             cout << "received query from " << qry.prevHost << endl;
-
+                            peerLock.unlock();
                             handleQuery(qry);
                         } else if (queryType == TYPE_QUERYHIT) {
                             QueryHit qryh;
                             status = recv(target_fd, &qryh, sizeof(QueryHit), 0);
                             errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
+                            peerLock.unlock();
                             handleQueryHit(qryh);
                         }
                     }
@@ -514,6 +515,7 @@ void Peer::runUserPort(unsigned short int port) {
                 try {
                     if (hash_str.length() == 64 &&
                         queryStatusMap.find(hash_str) == queryStatusMap.end()) {
+                        queryStatusLock.unlock();
                         initQuery(hash_str);
                     }
                 } catch (...) {
