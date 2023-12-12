@@ -169,7 +169,7 @@ void Peer::initQuery(string fileHash) {
 
 void Peer::handleQuery(Query qry) {
   string queryId = genQueryIdString(qry.id);
-  // std::lock_guard<std::mutex> guard(queryForwardLock);
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   // only process unprocessed query
   if (queryForwardMap.find(queryId) == queryForwardMap.end()) {
     queryForwardMap[queryId] = qry;
@@ -178,7 +178,7 @@ void Peer::handleQuery(Query qry) {
     if (checkFileExist(fileHash, fileDir)) {
       string filePath = findFileName(fileHash, fileDir);
       {
-        // std::lock_guard<std::mutex> guard(filePathLock);
+        std::lock_guard<std::mutex> guard(filePathLock);
         filePathMap[queryId] = filePath;
       }
       initQueryHit(qry);
@@ -211,7 +211,7 @@ void Peer::initQueryHit(Query qry) {
   newQryH.destPeer = selfInfo;
   newQryH.destPeer.port = filePort;
   string prevHost = string(qry.prevHost);
-  // std::lock_guard<std::mutex> guard(peerLock);
+  std::lock_guard<std::mutex> guard(peerLock);
   int target_fd = peerMap[prevHost].socket_fd;
   cout << "Init queryHit and send back to " << prevHost << endl;
   sendQueryHit(newQryH, prevHost, target_fd);
@@ -221,7 +221,7 @@ void Peer::forwardQueryHit(QueryHit qryh) {
   string key = genQueryIdString(qryh.id);
   string targetHost = "";
   int target_fd = -1;
-  // std::lock_guard<std::mutex> guard(queryForwardLock);
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   if (queryForwardMap.find(key) != queryForwardMap.end()) {
     targetHost = string(queryForwardMap[key].prevHost);
   }
@@ -240,7 +240,7 @@ void Peer::handleQueryHit(QueryHit qryh) {
   // If is initial host -> start file request
   if (strcmp(qryh.id.initHost, selfInfo.hostname) == 0) {
     string key(qryh.id.fileHash);
-    // std::lock_guard<std::mutex> guard(queryStatusLock);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     if (queryStatusMap.find(key) != queryStatusMap.end() &&
         !queryStatusMap[key].finished) {
       queryStatusMap[key].finished = true;
