@@ -382,7 +382,7 @@ void Peer::runSelect() {
         FD_ZERO(&peersFDSet);
         int nfds = 0;
         {
-        std::lock_guard<std::mutex> guard(peerLock);
+        // std::lock_guard<std::mutex> guard(peerLock);
         for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
              ++it) {
             FD_SET(it->second.socket_fd, &peersFDSet);
@@ -446,7 +446,7 @@ void Peer::runUserPort(unsigned short int port) {
             memset(&recvHash, 0, sizeof(recvHash));
             if (recv(curr_fd, &recvHash, 64, MSG_WAITALL) > 0) {
                 string hash_str(recvHash);
-                std::lock_guard<std::mutex> guard(queryStatusLock);
+                // std::lock_guard<std::mutex> guard(queryStatusLock);
                 if (hash_str.length() == 64 &&
                     queryStatusMap.find(hash_str) == queryStatusMap.end()) {
                     initQuery(hash_str);
