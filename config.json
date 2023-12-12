@@ -7,7 +7,7 @@
     "TTL": 10,
     "timeToErase": 600,
     "timeToCheck": 300,
-    "directory": "./example/folder2/",
+    "directory": "./example/folder1/",
     "famousNodes": [
         "vcm-37254.vm.duke.edu"
     ]

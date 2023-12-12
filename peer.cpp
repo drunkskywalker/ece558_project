@@ -370,6 +370,62 @@ void Peer::handleFileRequest(int socket_fd) {
     // }
 }
 
+// void Peer::runSelect() {
+//     fd_set peersFDSet;
+
+//     // set timeout
+//     struct timeval time;
+//     time.tv_sec = 60;
+//     time.tv_usec = 0;
+
+//     while (true) {
+//         FD_ZERO(&peersFDSet);
+//         int nfds = 0;
+//         {
+//             // std::lock_guard<std::mutex> guard(peerLock);
+//             peerLock.lock();
+//             for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
+//                  ++it) {
+//                 FD_SET(it->second.socket_fd, &peersFDSet);
+//                 if (it->second.socket_fd > nfds) {
+//                     nfds = it->second.socket_fd;
+//                 }
+//             }
+//             nfds++;
+//             int status = select(nfds, &peersFDSet, NULL, NULL, &time);
+//             errorHandle(status, "Error: select error", NULL, NULL);
+//             if (status == 0) {
+//                 // cout << "listen time limit" << endl;
+//                 continue;
+//             } else {
+//                 for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
+//                      ++it) {
+//                     int target_fd = it->second.socket_fd;
+//                     if (FD_ISSET(target_fd, &peersFDSet)) {  // find socket that received data
+//                         // recieve type
+//                         int queryType = 0;
+//                         status = recv(target_fd, &queryType, sizeof(int), 0);
+//                         errorHandle(status, "Error: select error", NULL, NULL);
+//                         // recieve query or query hit
+//                         if (queryType == TYPE_QUERY) {
+//                             Query qry;
+//                             status = recv(target_fd, &qry, sizeof(Query), 0);
+//                             errorHandle(status, "Error: Receive query error", NULL, NULL);
+//                             cout << "received query from " << qry.prevHost << endl;
+
+//                             handleQuery(qry);
+//                         } else if (queryType == TYPE_QUERYHIT) {
+//                             QueryHit qryh;
+//                             status = recv(target_fd, &qryh, sizeof(QueryHit), 0);
+//                             errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
+//                             handleQueryHit(qryh);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 void Peer::runSelect() {
     fd_set peersFDSet;
 
@@ -381,48 +437,57 @@ void Peer::runSelect() {
     while (true) {
         FD_ZERO(&peersFDSet);
         int nfds = 0;
-        {
-        // std::lock_guard<std::mutex> guard(peerLock);
-        for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
-             ++it) {
-            FD_SET(it->second.socket_fd, &peersFDSet);
-            if (it->second.socket_fd > nfds) {
-                nfds = it->second.socket_fd;
-            }
-        }
-        nfds++;
-        int status = select(nfds, &peersFDSet, NULL, NULL, &time);
-        errorHandle(status, "Error: select error", NULL, NULL);
-        if (status == 0) {
-            // cout << "listen time limit" << endl;
-            continue;
-        } else {
+
+        peerLock.lock();  // Manually lock the mutex
+        try {
             for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
                  ++it) {
-                int target_fd = it->second.socket_fd;
-                if (FD_ISSET(target_fd, &peersFDSet)) {  // find socket that received data
-                    // recieve type
-                    int queryType = 0;
-                    status = recv(target_fd, &queryType, sizeof(int), 0);
-                    errorHandle(status, "Error: select error", NULL, NULL);
-                    // recieve query or query hit
-                    if (queryType == TYPE_QUERY) {
-                        Query qry;
-                        status = recv(target_fd, &qry, sizeof(Query), 0);
-                        errorHandle(status, "Error: Receive query error", NULL, NULL);
-                        cout << "received query from " << qry.prevHost << endl;
+                FD_SET(it->second.socket_fd, &peersFDSet);
+                if (it->second.socket_fd > nfds) {
+                    nfds = it->second.socket_fd;
+                }
+            }
+            nfds++;
 
-                        handleQuery(qry);
-                    } else if (queryType == TYPE_QUERYHIT) {
-                        QueryHit qryh;
-                        status = recv(target_fd, &qryh, sizeof(QueryHit), 0);
-                        errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
-                        handleQueryHit(qryh);
+            peerLock.unlock();  // Unlock before potentially long blocking call
+            int status = select(nfds, &peersFDSet, NULL, NULL, &time);
+
+            peerLock.lock();  // Re-acquire lock after blocking call
+
+            errorHandle(status, "Error: select error", NULL, NULL);
+            if (status == 0) {
+                // cout << "listen time limit" << endl;
+                peerLock.unlock();  // Unlock before continue
+                continue;
+            } else {
+                for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
+                     ++it) {
+                    int target_fd = it->second.socket_fd;
+                    if (FD_ISSET(target_fd, &peersFDSet)) {
+                        int queryType = 0;
+                        status = recv(target_fd, &queryType, sizeof(int), 0);
+                        errorHandle(status, "Error: select error", NULL, NULL);
+                        if (queryType == TYPE_QUERY) {
+                            Query qry;
+                            status = recv(target_fd, &qry, sizeof(Query), 0);
+                            errorHandle(status, "Error: Receive query error", NULL, NULL);
+                            cout << "received query from " << qry.prevHost << endl;
+
+                            handleQuery(qry);
+                        } else if (queryType == TYPE_QUERYHIT) {
+                            QueryHit qryh;
+                            status = recv(target_fd, &qryh, sizeof(QueryHit), 0);
+                            errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
+                            handleQueryHit(qryh);
+                        }
                     }
                 }
             }
+        } catch (...) {
+            peerLock.unlock();  // Ensure the lock is unlocked in case of an exception
+            throw;              // Rethrow the exception
         }
-        }
+        peerLock.unlock();  // Unlock at the end of the loop iteration
     }
 }
 
@@ -440,21 +505,25 @@ void Peer::runUserPort(unsigned short int port) {
     int user_fd = buildServer(to_string(port).c_str());
     char recvHash[128];
     while (true) {
-        {
         int curr_fd = try_accept(user_fd);
         if (curr_fd != -1) {
             memset(&recvHash, 0, sizeof(recvHash));
             if (recv(curr_fd, &recvHash, 64, MSG_WAITALL) > 0) {
                 string hash_str(recvHash);
-                // std::lock_guard<std::mutex> guard(queryStatusLock);
-                if (hash_str.length() == 64 &&
-                    queryStatusMap.find(hash_str) == queryStatusMap.end()) {
-                    initQuery(hash_str);
+                queryStatusLock.lock(); 
+                try {
+                    if (hash_str.length() == 64 &&
+                        queryStatusMap.find(hash_str) == queryStatusMap.end()) {
+                        initQuery(hash_str);
+                    }
+                } catch (...) {
+                    queryStatusLock.unlock();  
+                    throw;                     
                 }
+                queryStatusLock.unlock();  
             }
             close(curr_fd);
         }
-    }
     }
 }
 
