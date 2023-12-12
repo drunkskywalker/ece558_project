@@ -449,15 +449,14 @@ void Peer::runSelect() {
             }
             nfds++;
 
-            peerLock.unlock();  // Unlock before potentially long blocking call
+            peerLock.unlock();  
             int status = select(nfds, &peersFDSet, NULL, NULL, &time);
 
-            peerLock.lock();  // Re-acquire lock after blocking call
-
+            peerLock.lock(); 
             errorHandle(status, "Error: select error", NULL, NULL);
             if (status == 0) {
                 // cout << "listen time limit" << endl;
-                peerLock.unlock();  // Unlock before continue
+                peerLock.unlock();  
                 continue;
             } else {
                 for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
@@ -480,15 +479,17 @@ void Peer::runSelect() {
                             errorHandle(status, "Error: Receive queryHit error", NULL, NULL);
                             peerLock.unlock();
                             handleQueryHit(qryh);
+                        } else {
+                            peerLock.unlock();
                         }
                     }
                 }
             }
         } catch (...) {
-            peerLock.unlock();  // Ensure the lock is unlocked in case of an exception
-            throw;              // Rethrow the exception
+            peerLock.unlock();  
+            throw;              
         }
-        peerLock.unlock();  // Unlock at the end of the loop iteration
+    
     }
 }
 
@@ -518,11 +519,14 @@ void Peer::runUserPort(unsigned short int port) {
                         queryStatusLock.unlock();
                         initQuery(hash_str);
                     }
+                    else {
+                        queryStatusLock.unlock();
+                    }
                 } catch (...) {
                     queryStatusLock.unlock();  
                     throw;                     
                 }
-                queryStatusLock.unlock();  
+
             }
             close(curr_fd);
         }
@@ -541,7 +545,7 @@ void Peer::runFilePort(unsigned short int port) {
 }
 
 void Peer::runCheckTimeout1() {
-    // std::lock_guard<std::mutex> guard(queryStatusLock);
+    std::lock_guard<std::mutex> guard(queryStatusLock);
     map<string, QueryStatus>::iterator it = queryStatusMap.begin();
     while (it != queryStatusMap.end()) {
         if (it->second.finished) {
@@ -561,7 +565,7 @@ void Peer::checkLoop1() {
     }
 }
 void Peer::runCheckTimeout2() {
-    // std::lock_guard<std::mutex> guard(queryForwardLock);
+    std::lock_guard<std::mutex> guard(queryForwardLock);
     map<string, Query>::iterator it2 = queryForwardMap.begin();
     while (it2 != queryForwardMap.end()) {
         if (time(NULL) - it2->second.id.timeStamp > timeToErase) {
