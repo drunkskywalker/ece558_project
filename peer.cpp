@@ -438,7 +438,7 @@ void Peer::runSelect() {
         FD_ZERO(&peersFDSet);
         int nfds = 0;
 
-        peerLock.lock();  // Manually lock the mutex
+        peerLock.lock();  
         try {
             for (map<string, PeerStore>::iterator it = peerMap.begin(); it != peerMap.end();
                  ++it) {
