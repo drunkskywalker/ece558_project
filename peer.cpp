@@ -471,7 +471,9 @@ void Peer::runFilePort(unsigned short int port) {
   }
 }
 
-void Peer::runCheckTimeout() {
+void Peer::runCheckTimeout1() {
+  sleep(timeToCheck);
+  std::lock_guard<std::mutex> guard(queryStatusLock);
   map<string, QueryStatus>::iterator it = queryStatusMap.begin();
   while (it != queryStatusMap.end()) {
     if (it->second.finished) {
@@ -484,7 +486,10 @@ void Peer::runCheckTimeout() {
       ++it;
     }
   }
-
+}
+void Peer::runCheckTimeout2() {
+  sleep(timeToCheck);
+  std::lock_guard<std::mutex> guard(queryForwardLock);
   map<string, Query>::iterator it2 = queryForwardMap.begin();
   while (it2 != queryForwardMap.end()) {
     if (time(NULL) - it2->second.id.timeStamp > timeToErase) {
@@ -494,8 +499,6 @@ void Peer::runCheckTimeout() {
       ++it2;
     }
   }
-
-  sleep(timeToCheck);
 }
 
 void Peer::run(vector<PeerInfo> & famousIdList) {
@@ -507,13 +510,15 @@ void Peer::run(vector<PeerInfo> & famousIdList) {
   // thread user_t(&runUserPort,this,userPort);
   thread file_t(&Peer::runFilePort, this, filePort);
   thread select_t(&Peer::runSelect, this);
-  thread check_t(&Peer::runCheckTimeout, this);
+  thread check_t(&Peer::runCheckTimeout1, this);
+  thread check_t2(&Peer::runCheckTimeout2, this);
 
   ping_t.detach();
   // user_t.detach();
   file_t.detach();
   select_t.detach();
   check_t.detach();
+  check_t2.detach();
 
   runUserPort(userPort);
 }

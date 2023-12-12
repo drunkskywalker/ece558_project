@@ -146,7 +146,8 @@ class Peer {
      */
   void runSelect();
 
-  void runCheckTimeout();
+  void runCheckTimeout1();
+  void runCheckTimeout2();
 
   // public:
   Peer(int ipn,
